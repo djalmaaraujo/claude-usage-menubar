@@ -56,11 +56,8 @@ final class UsageStore: ObservableObject {
     @Published var blocks: [UsageBlock] = []
     @Published var lastUpdated: Date?
     @Published var errorText: String?
-    @Published var didLoadTrigger = 0
-    @Published var didAlertTrigger = 0
 
     private var timer: Timer?
-    private var hasLoadedOnce = false
     private var lastAlertedPercent: Int?
 
     init() {
@@ -78,10 +75,6 @@ final class UsageStore: ObservableObject {
                 self.blocks = newBlocks
                 self.lastUpdated = Date()
                 self.errorText = nil
-                if !hasLoadedOnce {
-                    hasLoadedOnce = true
-                    didLoadTrigger += 1
-                }
                 checkThresholdAlert(newBlocks)
             } catch {
                 self.errorText = "Make sure claude is installed, you're logged in, and you're online."
@@ -99,7 +92,6 @@ final class UsageStore: ObservableObject {
             guard lastAlertedPercent == nil else { return }
             lastAlertedPercent = block.percent
             NSSound(named: "Glass")?.play()
-            didAlertTrigger += 1
         } else {
             lastAlertedPercent = nil
         }
@@ -172,7 +164,6 @@ let repoURL = URL(string: "https://github.com/djalmaaraujo/claude-usage-menubar"
 struct ContentView: View {
     @ObservedObject var store: UsageStore
     @AppStorage("showProgressInMenuBar") private var showProgress = true
-    @AppStorage("allowAnimations") private var allowAnimations = true
     @AppStorage("menuBarSourceKind") private var menuBarSourceKind = BlockKind.session.rawValue
     @AppStorage("alertsEnabled") private var alertsEnabled = false
     @AppStorage("alertThreshold") private var alertThreshold = 90
@@ -230,7 +221,6 @@ struct ContentView: View {
                         }
                     }
                     Toggle("Show progress in menubar", isOn: $showProgress)
-                    Toggle("Allow animations", isOn: $allowAnimations)
                     Section("Alerts") {
                         Toggle("Alert at threshold", isOn: $alertsEnabled)
                         Stepper("Threshold: \(alertThreshold)%", value: $alertThreshold, in: 1...100, step: 5)
@@ -255,9 +245,7 @@ struct ContentView: View {
 struct ClaudeUsageMenuApp: App {
     @StateObject private var store = UsageStore()
     @AppStorage("showProgressInMenuBar") private var showProgress = true
-    @AppStorage("allowAnimations") private var allowAnimations = true
     @AppStorage("menuBarSourceKind") private var menuBarSourceKind = BlockKind.session.rawValue
-    @State private var bounce = false
 
     var menuBarTitle: String? {
         guard store.errorText == nil, !store.blocks.isEmpty else { return nil }
@@ -279,17 +267,7 @@ struct ClaudeUsageMenuApp: App {
                     Text(" \(title)")
                 }
             }
-            .scaleEffect(bounce ? 1.35 : 1.0)
-            .animation(.interpolatingSpring(stiffness: 300, damping: 10), value: bounce)
-            .onChange(of: store.didLoadTrigger) { _ in triggerBounce() }
-            .onChange(of: store.didAlertTrigger) { _ in triggerBounce() }
         }
         .menuBarExtraStyle(.window)
-    }
-
-    private func triggerBounce() {
-        guard allowAnimations else { return }
-        bounce = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { bounce = false }
     }
 }

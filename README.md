@@ -27,6 +27,10 @@ Click the menu bar icon, see your bars. That's the whole app.
 
 No cookies, no OAuth flow of its own, no server. It shells out to the `claude` binary you already have installed and authenticated — same source of truth as the CLI's own `/usage` command.
 
+- **Pick what shows next to the icon** — session, weekly, or weekly-per-model, from the gear menu. Only options `/usage` actually returned show up.
+- **Threshold alerts** — set a percentage in the gear menu and get a system sound once your selected figure crosses it.
+- **Clear failure state** — if `claude` isn't installed, isn't logged in, or there's no connection, the popover shows a retry screen instead of spinning forever, and the menu bar icon swaps to a warning triangle.
+
 <p align="center">
   <img src="assets/screenshot-dark.png" alt="Claude Usage popover, dark mode" width="280">
   <img src="assets/screenshot-light.png" alt="Claude Usage popover, light mode" width="280">
