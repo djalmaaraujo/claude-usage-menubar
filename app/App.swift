@@ -126,12 +126,21 @@ struct UsageBarView: View {
     }
 }
 
+let repoURL = URL(string: "https://github.com/djalmaaraujo/claude-usage-menubar")!
+
 struct ContentView: View {
     @ObservedObject var store: UsageStore
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Claude Usage").font(.title2).bold()
+            HStack {
+                Text("Claude Usage").font(.title2).bold()
+                Spacer()
+                Button { store.refresh() } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.plain)
+            }
 
             if let error = store.errorText {
                 Text(error).foregroundColor(.red)
@@ -149,8 +158,10 @@ struct ContentView: View {
                         .font(.caption).foregroundColor(.secondary)
                 }
                 Spacer()
-                Button("Refresh") { store.refresh() }
-                    .buttonStyle(.link)
+                Button { NSWorkspace.shared.open(repoURL) } label: {
+                    Image(systemName: "chevron.left.forwardslash.chevron.right")
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(16)
@@ -161,6 +172,7 @@ struct ContentView: View {
 @main
 struct ClaudeUsageMenuApp: App {
     @StateObject private var store = UsageStore()
+    @AppStorage("showProgressInMenuBar") private var showProgress = true
 
     var body: some Scene {
         MenuBarExtra {
@@ -168,7 +180,15 @@ struct ClaudeUsageMenuApp: App {
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "sparkle")
-                Text(store.menuBarTitle)
+                if showProgress {
+                    Text(store.menuBarTitle)
+                }
+            }
+            .contextMenu {
+                Toggle("Show progress in menubar", isOn: $showProgress)
+                Button("GitHub") { NSWorkspace.shared.open(repoURL) }
+                Divider()
+                Button("Quit") { NSApplication.shared.terminate(nil) }
             }
         }
         .menuBarExtraStyle(.window)
