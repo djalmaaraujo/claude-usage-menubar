@@ -321,7 +321,13 @@ struct ContentView: View {
             Divider()
 
             HStack {
-                if let updated = store.lastUpdated {
+                if updateChecker.isChecking {
+                    Text("Checking for updates…").font(.caption).foregroundColor(.secondary)
+                } else if let updateError = updateChecker.checkError {
+                    Text(updateError).font(.caption).foregroundColor(.red)
+                } else if updateChecker.latestVersion != nil && !updateChecker.updateAvailable {
+                    Text("Up to date (v\(updateChecker.currentVersion))").font(.caption).foregroundColor(.secondary)
+                } else if let updated = store.lastUpdated {
                     Text("Last updated: \(updated.formatted(date: .omitted, time: .shortened))")
                         .font(.caption).foregroundColor(.secondary)
                 }
@@ -348,14 +354,12 @@ struct ContentView: View {
                                 if newValue { updateChecker.check() }
                             }
                         ))
-                        Button(updateChecker.isChecking ? "Checking…" : "Check for Updates Now") {
-                            updateChecker.check()
-                        }
-                        .disabled(updateChecker.isChecking)
+                        Button("Check for Updates Now") { updateChecker.check() }
+                            .disabled(updateChecker.isChecking)
                     }
                     Button("GitHub") { NSWorkspace.shared.open(repoURL) }
                     Divider()
-                    Button("Quit") { NSApplication.shared.terminate(nil) }
+                    Button("Quit Claude Usage v\(updateChecker.currentVersion)") { NSApplication.shared.terminate(nil) }
                 } label: {
                     Image(systemName: "gearshape")
                 }
