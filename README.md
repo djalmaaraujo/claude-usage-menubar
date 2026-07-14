@@ -27,13 +27,18 @@ Click the menu bar icon, see your bars. That's the whole app.
 
 No cookies, no OAuth flow of its own, no server. It shells out to the `claude` binary you already have installed and authenticated — same source of truth as the CLI's own `/usage` command.
 
+<p align="center">
+  <img src="assets/screenshot-dark.png" alt="Claude Usage popover, dark mode" width="280">
+  <img src="assets/screenshot-light.png" alt="Claude Usage popover, light mode" width="280">
+</p>
+
 ## Install
 
 ### Build from source
 
 ```bash
-git clone https://github.com/djalmaaraujo/claude-code-usage-menubar.git
-cd claude-code-usage-menubar/app
+git clone https://github.com/djalmaaraujo/claude-usage-menubar.git
+cd claude-usage-menubar/app
 ./build.sh
 ```
 
@@ -67,7 +72,7 @@ No other dependencies — one Swift file, SwiftUI + AppKit only.
 | File | Purpose |
 |------|---------|
 | `app/App.swift` | the entire app — menu bar scene, usage polling, parsing, UI |
-| `app/make_icon.swift` | generates the app icon + menu bar glyph (no image assets checked in) |
+| `app/make_icon.swift` | generates `AppIcon.icns` + `menubar-mark.png` from the Claude Code mark |
 | `app/Info.plist` | bundle metadata, `LSUIElement` to hide the Dock icon |
 | `app/build.sh` | compiles and packages `ClaudeUsage.app` |
 

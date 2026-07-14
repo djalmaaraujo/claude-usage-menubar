@@ -1,43 +1,19 @@
 import SwiftUI
 
-// Claude Code mark, drawn as a vector Shape instead of a bundled PNG - loading
-// it as a template NSImage rendered as a broken/generic asterisk glyph in the
-// real NSStatusItem (even though the PNG itself was pixel-correct in
-// isolation). Pure SwiftUI drawing sidesteps that entirely.
-struct ClaudeCodeMark: Shape {
-    func path(in rect: CGRect) -> Path {
-        let scale = rect.height / 15.0
-        func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-            CGPoint(x: rect.minX + x * scale, y: rect.minY + (y - 5) * scale)
-        }
-
-        var path = Path()
-        path.move(to: pt(20.998, 10.949))
-        for p in [(20.998, 10.949), (24, 10.949), (24, 14.051), (21, 14.051), (21, 17.079),
-                  (19.513, 17.079), (19.513, 20), (18, 20), (18, 17.079), (16.513, 17.079),
-                  (16.513, 20), (15, 20), (15, 17.079), (9, 17.079), (9, 20), (7.488, 20),
-                  (7.488, 17.079), (6, 17.079), (6, 20), (4.487, 20), (4.487, 17.079),
-                  (3, 17.079), (3, 14.05), (0, 14.05), (0, 10.95), (3, 10.95), (3, 5),
-                  (20.998, 5), (20.998, 10.949)] {
-            path.addLine(to: pt(CGFloat(p.0), CGFloat(p.1)))
-        }
-        path.closeSubpath()
-
-        path.move(to: pt(6, 10.949))
-        for p in [(6, 10.949), (7.488, 10.949), (7.488, 8.102), (6, 8.102), (6, 10.949)] {
-            path.addLine(to: pt(CGFloat(p.0), CGFloat(p.1)))
-        }
-        path.closeSubpath()
-
-        path.move(to: pt(16.51, 10.949))
-        for p in [(16.51, 10.949), (18, 10.949), (18, 8.102), (16.51, 8.102), (16.51, 10.949)] {
-            path.addLine(to: pt(CGFloat(p.0), CGFloat(p.1)))
-        }
-        path.closeSubpath()
-
-        return path
-    }
-}
+// Claude Code mark for the menu bar. Loaded as a template NSImage with its
+// .size set explicitly (in points) - and displayed with NO .resizable()/
+// .frame() modifiers, so SwiftUI uses that intrinsic size directly, same as
+// a plain Image(systemName:). Adding resizable()/frame() here previously
+// made MenuBarExtra render nothing at all (it needs an intrinsic size before
+// its own layout pass, which resizable() removes).
+let menuBarMarkImage: NSImage = {
+    guard let url = Bundle.main.url(forResource: "menubar-mark", withExtension: "png"),
+          let image = NSImage(contentsOf: url)
+    else { return NSImage() }
+    image.isTemplate = true
+    image.size = NSSize(width: 12 * (24.0 / 15.0), height: 12)
+    return image
+}()
 
 struct UsageBlock: Identifiable {
     let id = UUID()
@@ -204,8 +180,9 @@ struct ContentView: View {
                     Divider()
                     Button("Quit") { NSApplication.shared.terminate(nil) }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "gearshape")
                 }
+                .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
                 .fixedSize()
             }
@@ -225,9 +202,7 @@ struct ClaudeUsageMenuApp: App {
             ContentView(store: store)
         } label: {
             HStack(spacing: 0) {
-                ClaudeCodeMark()
-                    .fill(style: FillStyle(eoFill: true))
-                    .frame(width: 12 * (24.0 / 15.0), height: 12)
+                Image(nsImage: menuBarMarkImage)
                 if showProgress {
                     Text(" \(store.menuBarTitle)")
                 }

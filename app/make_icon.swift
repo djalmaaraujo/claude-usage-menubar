@@ -55,6 +55,17 @@ func gradientMark(height: CGFloat) -> NSImage {
     return image
 }
 
+// Flat black silhouette for the menu bar (template rendering).
+func templateMark(height: CGFloat) -> NSImage {
+    let width = height * markAspect
+    let image = NSImage(size: NSSize(width: width, height: height))
+    image.lockFocus()
+    NSColor.black.setFill()
+    claudeCodeMarkPath(originX: 0, originY: 0, height: height).fill()
+    image.unlockFocus()
+    return image
+}
+
 // Rounded-square badge, piper-style gradient (cyan -> indigo) on dark navy bg,
 // Claude Code mark centered with a "%" tucked below it.
 func drawIcon(size: CGFloat) -> NSImage {
@@ -120,4 +131,5 @@ let sizes: [CGFloat] = [16, 32, 64, 128, 256, 512, 1024]
 for s in sizes {
     savePNG(drawIcon(size: s), to: "\(outDir)/icon_\(Int(s)).png")
 }
+savePNG(templateMark(height: 64), to: "\(outDir)/menubar-mark.png")
 print("icons written to \(outDir)")

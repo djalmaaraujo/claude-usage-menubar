@@ -8,6 +8,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
 cp Info.plist "$APP/Contents/"
 cp AppIcon.icns "$APP/Contents/Resources/"
+cp menubar-mark.png "$APP/Contents/Resources/"
 
 swiftc -parse-as-library -o "$APP/Contents/MacOS/ClaudeUsage" \
     App.swift \
