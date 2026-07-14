@@ -221,7 +221,7 @@ struct ContentView: View {
                         }
                     }
                     Toggle("Show progress in menubar", isOn: $showProgress)
-                    Section("Alerts") {
+                    Section("Alerts (tracks \"Show in menu bar\" above)") {
                         Toggle("Alert at threshold", isOn: $alertsEnabled)
                         Stepper("Threshold: \(alertThreshold)%", value: $alertThreshold, in: 1...100, step: 5)
                     }
