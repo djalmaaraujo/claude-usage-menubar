@@ -224,7 +224,10 @@ final class UpdateChecker: ObservableObject {
         // surviving to trigger it: hand the whole "upgrade then open" sequence to
         // a single detached shell process instead, then just ask to quit - if the
         // OS kills us first, the detached shell keeps running regardless.
-        let script = "\"\(brewPath)\" upgrade --cask djalmaaraujo/tap/claude-usage-menubar; open /Applications/ClaudeUsage.app"
+        // `brew upgrade` only sees new cask versions after the tap's local clone
+        // is refreshed - without `brew update` first, it just sees the old
+        // version as "latest" and does nothing (reopens the same build).
+        let script = "\"\(brewPath)\" update; \"\(brewPath)\" upgrade --cask djalmaaraujo/tap/claude-usage-menubar; open /Applications/ClaudeUsage.app"
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
         process.arguments = ["-c", script]
