@@ -24,14 +24,16 @@ func claudeCodeMarkPath(originX: CGFloat, originY: CGFloat, height: CGFloat) -> 
     }
     path.close()
 
-    path.move(to: pt(6, 10.949))
-    for p in [(7.488, 10.949), (7.488, 8.102), (6, 8.102), (6, 10.949)] {
+    // Eyes widened from the original mark's 1.488-unit cutouts - too thin to
+    // read as two dots once scaled down to menu bar size.
+    path.move(to: pt(5.6, 10.949))
+    for p in [(8.0, 10.949), (8.0, 7.7), (5.6, 7.7), (5.6, 10.949)] {
         path.line(to: pt(CGFloat(p.0), CGFloat(p.1)))
     }
     path.close()
 
-    path.move(to: pt(16.51, 10.949))
-    for p in [(18, 10.949), (18, 8.102), (16.51, 8.102), (16.51, 10.949)] {
+    path.move(to: pt(16.0, 10.949))
+    for p in [(18.4, 10.949), (18.4, 7.7), (16.0, 7.7), (16.0, 10.949)] {
         path.line(to: pt(CGFloat(p.0), CGFloat(p.1)))
     }
     path.close()
@@ -121,17 +123,39 @@ func drawIcon(size: CGFloat) -> NSImage {
 // Pixel-grid mascot poses (24x24 cell grid, from the Claude mascot SVGs) -
 // only cell presence matters for a template silhouette, not their original
 // colors, so this ignores fill and just plots filled 24x24 squares.
-func pixelGridMark(cells: [(CGFloat, CGFloat)], canvasWidth: CGFloat, canvasHeight: CGFloat, height: CGFloat) -> NSImage {
-    let scale = height / canvasHeight
-    let width = canvasWidth * scale
+// Cropped to the cells' own bounding box (not a fixed nominal canvas) so
+// every pose fills its frame the same way once scaled into a shared menu
+// bar icon box - a fixed canvas left some poses with dead margin (e.g. the
+// alert mascot's raised arm leaves empty space elsewhere), making them look
+// visually smaller than a pose that fills its canvas edge to edge.
+// `eyeHoles` are punched as transparent cutouts independent of the 24-unit
+// cell grid (x, y, width, height, all in the same coordinate space as
+// `cells`) - lets an eye be a thin closed-eye slit instead of a full square.
+func pixelGridMark(cells: [(CGFloat, CGFloat)], height: CGFloat, eyeHoles: [(CGFloat, CGFloat, CGFloat, CGFloat)] = []) -> NSImage {
+    let minX = cells.map(\.0).min()!
+    let maxX = cells.map(\.0).max()! + 24
+    let minY = cells.map(\.1).min()!
+    let maxY = cells.map(\.1).max()! + 24
+    let contentWidth = maxX - minX
+    let contentHeight = maxY - minY
+
+    let scale = height / contentHeight
+    let width = contentWidth * scale
     let image = NSImage(size: NSSize(width: width, height: height))
     image.lockFocus()
     NSColor.black.setFill()
+    let path = NSBezierPath()
+    path.windingRule = .evenOdd
     for (x, y) in cells {
         // flip y: SVG is top-left origin, Cocoa drawing here is bottom-left
-        let rect = NSRect(x: x * scale, y: (canvasHeight - y - 24) * scale, width: 24 * scale, height: 24 * scale)
-        NSBezierPath(rect: rect).fill()
+        let rect = NSRect(x: (x - minX) * scale, y: (maxY - y - 24) * scale, width: 24 * scale, height: 24 * scale)
+        path.appendRect(rect)
     }
+    for (x, y, w, h) in eyeHoles {
+        let rect = NSRect(x: (x - minX) * scale, y: (maxY - y - h) * scale, width: w * scale, height: h * scale)
+        path.appendRect(rect)
+    }
+    path.fill()
     image.unlockFocus()
     return image
 }
@@ -141,8 +165,11 @@ let alertMascotCells: [(CGFloat, CGFloat)] = [
     (216, 24), (240, 24),
     (48, 48), (72, 48), (96, 48), (120, 48), (144, 48), (168, 48), (192, 48), (216, 48), (240, 48),
     (48, 72), (72, 72), (96, 72), (120, 72), (144, 72), (168, 72), (192, 72), (216, 72), (240, 72),
-    (48, 96), (72, 96), (96, 96), (120, 96), (144, 96), (168, 96), (192, 96), (216, 96), (240, 96),
-    (48, 120), (72, 120), (96, 120), (120, 120), (144, 120), (168, 120), (192, 120), (216, 120), (240, 120),
+    // (96, 96) and (192, 96) are the eyes in the original mascot (dark pixels
+    // against the tan body) - excluded so they render as transparent holes.
+    (48, 96), (72, 96), (120, 96), (144, 96), (168, 96), (216, 96), (240, 96),
+    // Eyes extended down into this row too (taller, more visible at menu bar size).
+    (48, 120), (72, 120), (120, 120), (144, 120), (168, 120), (216, 120), (240, 120),
     (48, 144), (72, 144), (96, 144), (120, 144), (144, 144), (168, 144), (192, 144), (216, 144), (240, 144),
     (48, 168), (72, 168), (96, 168), (120, 168), (144, 168), (168, 168), (192, 168), (216, 168), (240, 168),
     (0, 192), (24, 192), (48, 192), (72, 192), (96, 192), (120, 192), (144, 192), (168, 192), (192, 192), (216, 192), (240, 192),
@@ -180,6 +207,14 @@ for s in sizes {
     savePNG(drawIcon(size: s), to: "\(outDir)/icon_\(Int(s)).png")
 }
 savePNG(templateMark(height: 64), to: "\(outDir)/menubar-mark.png")
-savePNG(pixelGridMark(cells: alertMascotCells, canvasWidth: 312, canvasHeight: 312, height: 64), to: "\(outDir)/menubar-mark-alert.png")
-savePNG(pixelGridMark(cells: hundredMascotCells, canvasWidth: 312, canvasHeight: 264, height: 64), to: "\(outDir)/menubar-mark-100.png")
+savePNG(pixelGridMark(cells: alertMascotCells, height: 64), to: "\(outDir)/menubar-mark-alert.png")
+// Closed/sleeping eyes for the 100% pose - thin horizontal slits instead of
+// open squares, reads as "exhausted" rather than just "arms up".
+// Simple pixel-art X punched through the middle of the body - reads as
+// "full" much more clearly than trying to make closed/sleeping eyes work
+// at this size.
+savePNG(pixelGridMark(cells: hundredMascotCells, height: 64, eyeHoles: [
+    (111, 45, 18, 18), (129, 63, 18, 18), (147, 81, 18, 18), (165, 99, 18, 18), (183, 117, 18, 18),
+    (201, 45, 18, 18), (183, 63, 18, 18), (165, 81, 18, 18), (147, 99, 18, 18), (129, 117, 18, 18),
+]), to: "\(outDir)/menubar-mark-100.png")
 print("icons written to \(outDir)")

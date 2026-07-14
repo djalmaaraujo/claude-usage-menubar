@@ -6,20 +6,29 @@ import SwiftUI
 // a plain Image(systemName:). Adding resizable()/frame() here previously
 // made MenuBarExtra render nothing at all (it needs an intrinsic size before
 // its own layout pass, which resizable() removes).
-func loadMenuBarImage(_ resource: String, aspect: CGFloat) -> NSImage {
+// All three menu bar icons share this exact box so swapping between them
+// (idle/alert/100%) never resizes the status item - a size mismatch made
+// the menu bar visibly flick every time the icon changed. The alert/100%
+// mascots are natively ~1:1 and ~1.18:1 (vs. the plain mark's 1.6:1), so
+// they get stretched a bit wider to fill the same box - which reads fine
+// since it just gives the pixel-art body more width, same as widening it
+// by hand would.
+let menuBarIconBoxSize = NSSize(width: 16 * (24.0 / 15.0), height: 16)
+
+func loadMenuBarImage(_ resource: String) -> NSImage {
     guard let url = Bundle.main.url(forResource: resource, withExtension: "png"),
           let image = NSImage(contentsOf: url)
     else { return NSImage() }
     image.isTemplate = true
-    image.size = NSSize(width: 16 * aspect, height: 16)
+    image.size = menuBarIconBoxSize
     return image
 }
 
-let menuBarMarkImage = loadMenuBarImage("menubar-mark", aspect: 24.0 / 15.0)
+let menuBarMarkImage = loadMenuBarImage("menubar-mark")
 // Pixel-grid mascot poses, shown instead of the plain mark once usage
 // crosses the alert threshold / hits 100%.
-let menuBarAlertImage = loadMenuBarImage("menubar-mark-alert", aspect: 312.0 / 312.0)
-let menuBar100Image = loadMenuBarImage("menubar-mark-100", aspect: 312.0 / 264.0)
+let menuBarAlertImage = loadMenuBarImage("menubar-mark-alert")
+let menuBar100Image = loadMenuBarImage("menubar-mark-100")
 
 enum BlockKind: String {
     case session, weeklyAll, weeklyModel
@@ -78,6 +87,14 @@ final class UsageStore: ObservableObject {
             do {
                 let text = try await Self.runUsageCommand()
                 let newBlocks = parseUsage(text)
+                guard !newBlocks.isEmpty else {
+                    // claude ran and returned something, but not usage text -
+                    // e.g. an offline/auth error printed as plain text. Treat
+                    // as a failure instead of silently showing an empty state
+                    // that looks like it's still loading forever.
+                    self.errorText = "Got an unexpected response from claude - check your internet connection and that you're logged in."
+                    return
+                }
                 self.blocks = newBlocks
                 self.lastUpdated = Date()
                 self.errorText = nil
@@ -139,6 +156,12 @@ final class UsageStore: ObservableObject {
                 process.standardError = Pipe()
                 do {
                     try process.run()
+                    // Without this, a hung claude process (e.g. stuck on a dead
+                    // network call) leaves the UI on "Loading…" forever with no
+                    // way out - force it to fail instead of hanging indefinitely.
+                    DispatchQueue.global().asyncAfter(deadline: .now() + 15) {
+                        if process.isRunning { process.terminate() }
+                    }
                     // Read before waiting on exit: if output fills the pipe buffer,
                     // waiting first deadlocks the child (blocked writing) against us
                     // (blocked waiting) since nothing is draining the pipe.

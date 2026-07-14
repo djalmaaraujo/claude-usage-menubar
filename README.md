@@ -10,6 +10,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/single-swift%20file-22d3ee?style=flat-square" alt="single swift file">
   <img src="https://img.shields.io/badge/dependencies-zero-6366f1?style=flat-square" alt="zero dependencies">
+  <img src="https://img.shields.io/badge/app%20size-~2.5MB-38bdf8?style=flat-square" alt="app size ~2.5MB">
+  <img src="https://img.shields.io/badge/memory-%3C30MB-38bdf8?style=flat-square" alt="memory under 30MB">
   <img src="https://img.shields.io/badge/license-MIT-94a3b8?style=flat-square" alt="MIT license">
 </p>
 
