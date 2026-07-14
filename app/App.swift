@@ -211,31 +211,25 @@ final class UpdateChecker: ObservableObject {
     }
 
     func updateAndRestart() {
-        Task {
-            let brewCandidates = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"]
-            guard let brewPath = brewCandidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
-                checkError = "Homebrew not found — run: brew upgrade --cask djalmaaraujo/tap/claude-usage-menubar"
-                return
-            }
-            isChecking = true
-            await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-                DispatchQueue.global(qos: .userInitiated).async {
-                    let process = Process()
-                    process.executableURL = URL(fileURLWithPath: brewPath)
-                    process.arguments = ["upgrade", "--cask", "djalmaaraujo/tap/claude-usage-menubar"]
-                    try? process.run()
-                    process.waitUntilExit()
-                    cont.resume()
-                }
-            }
-            // We're still running the OLD binary at this point, so `open` may just
-            // refocus us instead of starting a fresh process - and then terminate()
-            // kills that same instance, leaving nothing. Detach a delayed, unwaited
-            // relaunch so it only runs after we're truly dead.
-            let relaunch = Process()
-            relaunch.executableURL = URL(fileURLWithPath: "/bin/sh")
-            relaunch.arguments = ["-c", "sleep 1; open /Applications/ClaudeUsage.app"]
-            try? relaunch.run()
+        let brewCandidates = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"]
+        guard let brewPath = brewCandidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
+            checkError = "Homebrew not found — run: brew upgrade --cask djalmaaraujo/tap/claude-usage-menubar"
+            return
+        }
+        isChecking = true
+        // `brew upgrade` replaces our OWN running executable on disk - macOS can
+        // SIGKILL a process whose backing file changes mid-run (code-signing
+        // re-validation on the next page-in), so we might never get to run any
+        // Swift code after the upgrade starts. The relaunch can't depend on us
+        // surviving to trigger it: hand the whole "upgrade then open" sequence to
+        // a single detached shell process instead, then just ask to quit - if the
+        // OS kills us first, the detached shell keeps running regardless.
+        let script = "\"\(brewPath)\" upgrade --cask djalmaaraujo/tap/claude-usage-menubar; open /Applications/ClaudeUsage.app"
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", script]
+        try? process.run()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             NSApplication.shared.terminate(nil)
         }
     }
