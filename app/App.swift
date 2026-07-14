@@ -326,6 +326,19 @@ struct ContentView: View {
                 ForEach(store.blocks) { UsageBarView(block: $0) }
             }
 
+            if alertsEnabled {
+                HStack {
+                    Text("Alert at").font(.caption).foregroundColor(.secondary)
+                    Slider(value: Binding(
+                        get: { Double(alertThreshold) },
+                        set: { alertThreshold = Int($0.rounded()) }
+                    ), in: 1...100, step: 1)
+                    Text("\(alertThreshold)%")
+                        .font(.caption).foregroundColor(.secondary)
+                        .frame(width: 32, alignment: .trailing)
+                }
+            }
+
             Divider()
 
             HStack {
@@ -360,7 +373,6 @@ struct ContentView: View {
                     }
                     Section("Alerts (tracks the percentage above)") {
                         Toggle("Alert at threshold", isOn: $alertsEnabled)
-                        Stepper("Threshold: \(alertThreshold)%", value: $alertThreshold, in: 1...100, step: 5)
                     }
                     Section("Updates") {
                         Toggle("Check for updates automatically", isOn: Binding(
