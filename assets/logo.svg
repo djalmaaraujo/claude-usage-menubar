@@ -1,0 +1,31 @@
+<svg width="640" height="220" viewBox="0 0 640 220" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Claude Usage logo">
+  <defs>
+    <linearGradient id="strokeGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- badge -->
+  <rect x="20" y="30" width="160" height="160" rx="35" fill="url(#bgGrad)" stroke="url(#strokeGrad)" stroke-width="4"/>
+
+  <!-- sparkle glyph (four-point twinkle, curved sides) -->
+  <path d="M100 62
+           C103 92 103 92 133 100
+           C103 108 103 108 100 138
+           C97 108 97 108 67 100
+           C97 92 97 92 100 62 Z" fill="url(#strokeGrad)"/>
+
+  <!-- percent sign -->
+  <text x="118" y="172" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="30" font-weight="700" fill="#e2e8f0">%</text>
+
+  <!-- Wordmark -->
+  <text x="210" y="118" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="52" font-weight="700" fill="#e2e8f0">claude usage</text>
+
+  <!-- Tagline -->
+  <text x="214" y="152" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" fill="#94a3b8">your quota, right in the menu bar</text>
+</svg>
