@@ -34,6 +34,14 @@ No cookies, no OAuth flow of its own, no server. It shells out to the `claude` b
 
 ## Install
 
+### Homebrew (recommended)
+
+```bash
+brew install djalmaaraujo/tap/claude-usage-menubar
+```
+
+Installs `ClaudeUsage.app` straight into `/Applications` and clears the quarantine flag, so it opens without a Gatekeeper warning.
+
 ### Build from source
 
 ```bash
