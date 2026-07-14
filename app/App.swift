@@ -130,12 +130,22 @@ let repoURL = URL(string: "https://github.com/djalmaaraujo/claude-usage-menubar"
 
 struct ContentView: View {
     @ObservedObject var store: UsageStore
+    @AppStorage("showProgressInMenuBar") private var showProgress = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("Claude Usage").font(.title2).bold()
                 Spacer()
+                Menu {
+                    Toggle("Show progress in menubar", isOn: $showProgress)
+                    Divider()
+                    Button("Quit") { NSApplication.shared.terminate(nil) }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .menuIndicator(.hidden)
+                .fixedSize()
                 Button { store.refresh() } label: {
                     Image(systemName: "arrow.clockwise")
                 }
@@ -183,12 +193,6 @@ struct ClaudeUsageMenuApp: App {
                 if showProgress {
                     Text(store.menuBarTitle)
                 }
-            }
-            .contextMenu {
-                Toggle("Show progress in menubar", isOn: $showProgress)
-                Button("GitHub") { NSWorkspace.shared.open(repoURL) }
-                Divider()
-                Button("Quit") { NSApplication.shared.terminate(nil) }
             }
         }
         .menuBarExtraStyle(.window)
