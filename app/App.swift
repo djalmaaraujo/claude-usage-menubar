@@ -6,14 +6,20 @@ import SwiftUI
 // a plain Image(systemName:). Adding resizable()/frame() here previously
 // made MenuBarExtra render nothing at all (it needs an intrinsic size before
 // its own layout pass, which resizable() removes).
-let menuBarMarkImage: NSImage = {
-    guard let url = Bundle.main.url(forResource: "menubar-mark", withExtension: "png"),
+func loadMenuBarImage(_ resource: String, aspect: CGFloat) -> NSImage {
+    guard let url = Bundle.main.url(forResource: resource, withExtension: "png"),
           let image = NSImage(contentsOf: url)
     else { return NSImage() }
     image.isTemplate = true
-    image.size = NSSize(width: 12 * (24.0 / 15.0), height: 12)
+    image.size = NSSize(width: 16 * aspect, height: 16)
     return image
-}()
+}
+
+let menuBarMarkImage = loadMenuBarImage("menubar-mark", aspect: 24.0 / 15.0)
+// Pixel-grid mascot poses, shown instead of the plain mark once usage
+// crosses the alert threshold / hits 100%.
+let menuBarAlertImage = loadMenuBarImage("menubar-mark-alert", aspect: 312.0 / 312.0)
+let menuBar100Image = loadMenuBarImage("menubar-mark-100", aspect: 312.0 / 264.0)
 
 enum BlockKind: String {
     case session, weeklyAll, weeklyModel
@@ -246,11 +252,25 @@ struct ClaudeUsageMenuApp: App {
     @StateObject private var store = UsageStore()
     @AppStorage("showProgressInMenuBar") private var showProgress = true
     @AppStorage("menuBarSourceKind") private var menuBarSourceKind = BlockKind.session.rawValue
+    @AppStorage("alertsEnabled") private var alertsEnabled = false
+    @AppStorage("alertThreshold") private var alertThreshold = 90
+
+    var selectedBlock: UsageBlock? {
+        guard store.errorText == nil, !store.blocks.isEmpty else { return nil }
+        return store.blocks.first(where: { $0.kind.rawValue == menuBarSourceKind }) ?? store.blocks.first
+    }
 
     var menuBarTitle: String? {
-        guard store.errorText == nil, !store.blocks.isEmpty else { return nil }
-        let block = store.blocks.first(where: { $0.kind.rawValue == menuBarSourceKind }) ?? store.blocks.first
-        return block.map { "\($0.percent)%" }
+        selectedBlock.map { "\($0.percent)%" }
+    }
+
+    // 100% always wins regardless of the alert toggle (it's just true), the
+    // threshold pose only shows if alerts are actually turned on.
+    var menuBarIcon: NSImage {
+        guard let percent = selectedBlock?.percent else { return menuBarMarkImage }
+        if percent >= 100 { return menuBar100Image }
+        if alertsEnabled && percent >= alertThreshold { return menuBarAlertImage }
+        return menuBarMarkImage
     }
 
     var body: some Scene {
@@ -261,7 +281,7 @@ struct ClaudeUsageMenuApp: App {
                 if store.errorText != nil {
                     Image(systemName: "exclamationmark.triangle")
                 } else {
-                    Image(nsImage: menuBarMarkImage)
+                    Image(nsImage: menuBarIcon)
                 }
                 if showProgress, let title = menuBarTitle {
                     Text(" \(title)")

@@ -118,6 +118,54 @@ func drawIcon(size: CGFloat) -> NSImage {
     return image
 }
 
+// Pixel-grid mascot poses (24x24 cell grid, from the Claude mascot SVGs) -
+// only cell presence matters for a template silhouette, not their original
+// colors, so this ignores fill and just plots filled 24x24 squares.
+func pixelGridMark(cells: [(CGFloat, CGFloat)], canvasWidth: CGFloat, canvasHeight: CGFloat, height: CGFloat) -> NSImage {
+    let scale = height / canvasHeight
+    let width = canvasWidth * scale
+    let image = NSImage(size: NSSize(width: width, height: height))
+    image.lockFocus()
+    NSColor.black.setFill()
+    for (x, y) in cells {
+        // flip y: SVG is top-left origin, Cocoa drawing here is bottom-left
+        let rect = NSRect(x: x * scale, y: (canvasHeight - y - 24) * scale, width: 24 * scale, height: 24 * scale)
+        NSBezierPath(rect: rect).fill()
+    }
+    image.unlockFocus()
+    return image
+}
+
+let alertMascotCells: [(CGFloat, CGFloat)] = [
+    (216, 0), (240, 0),
+    (216, 24), (240, 24),
+    (48, 48), (72, 48), (96, 48), (120, 48), (144, 48), (168, 48), (192, 48), (216, 48), (240, 48),
+    (48, 72), (72, 72), (96, 72), (120, 72), (144, 72), (168, 72), (192, 72), (216, 72), (240, 72),
+    (48, 96), (72, 96), (96, 96), (120, 96), (144, 96), (168, 96), (192, 96), (216, 96), (240, 96),
+    (48, 120), (72, 120), (96, 120), (120, 120), (144, 120), (168, 120), (192, 120), (216, 120), (240, 120),
+    (48, 144), (72, 144), (96, 144), (120, 144), (144, 144), (168, 144), (192, 144), (216, 144), (240, 144),
+    (48, 168), (72, 168), (96, 168), (120, 168), (144, 168), (168, 168), (192, 168), (216, 168), (240, 168),
+    (0, 192), (24, 192), (48, 192), (72, 192), (96, 192), (120, 192), (144, 192), (168, 192), (192, 192), (216, 192), (240, 192),
+    (0, 216), (24, 216), (48, 216), (72, 216), (96, 216), (120, 216), (144, 216), (168, 216), (192, 216), (216, 216), (240, 216),
+    (48, 240), (120, 240), (168, 240), (240, 240),
+    (72, 264), (120, 264), (192, 264), (264, 264),
+    (72, 288), (120, 288), (192, 288), (288, 288),
+]
+
+let hundredMascotCells: [(CGFloat, CGFloat)] = [
+    (48, 0), (72, 0), (96, 0), (120, 0), (144, 0), (168, 0), (192, 0), (216, 0), (240, 0),
+    (48, 24), (72, 24), (96, 24), (120, 24), (144, 24), (168, 24), (192, 24), (216, 24), (240, 24),
+    (48, 48), (72, 48), (96, 48), (120, 48), (144, 48), (168, 48), (192, 48), (216, 48), (240, 48),
+    (48, 72), (72, 72), (96, 72), (120, 72), (144, 72), (168, 72), (192, 72), (216, 72), (240, 72),
+    (48, 96), (72, 96), (96, 96), (120, 96), (144, 96), (168, 96), (192, 96), (216, 96), (240, 96),
+    (0, 120), (24, 120), (48, 120), (72, 120), (96, 120), (120, 120), (144, 120), (168, 120), (192, 120), (216, 120), (240, 120), (264, 120), (288, 120),
+    (0, 144), (24, 144), (48, 144), (72, 144), (96, 144), (120, 144), (144, 144), (168, 144), (192, 144), (216, 144), (240, 144), (264, 144), (288, 144),
+    (48, 168), (72, 168), (96, 168), (120, 168), (144, 168), (168, 168), (192, 168), (216, 168), (240, 168),
+    (48, 192), (96, 192), (192, 192), (240, 192),
+    (48, 216), (96, 216), (192, 216), (240, 216),
+    (48, 240), (96, 240), (192, 240), (240, 240),
+]
+
 func savePNG(_ image: NSImage, to path: String) {
     guard let tiff = image.tiffRepresentation,
           let rep = NSBitmapImageRep(data: tiff),
@@ -132,4 +180,6 @@ for s in sizes {
     savePNG(drawIcon(size: s), to: "\(outDir)/icon_\(Int(s)).png")
 }
 savePNG(templateMark(height: 64), to: "\(outDir)/menubar-mark.png")
+savePNG(pixelGridMark(cells: alertMascotCells, canvasWidth: 312, canvasHeight: 312, height: 64), to: "\(outDir)/menubar-mark-alert.png")
+savePNG(pixelGridMark(cells: hundredMascotCells, canvasWidth: 312, canvasHeight: 264, height: 64), to: "\(outDir)/menubar-mark-100.png")
 print("icons written to \(outDir)")
