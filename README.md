@@ -13,6 +13,10 @@
   <img src="https://img.shields.io/badge/license-MIT-94a3b8?style=flat-square" alt="MIT license">
 </p>
 
+<p align="center">
+  <img src="assets/screenshot-main.png" alt="Claude Usage popover and settings menu" width="480">
+</p>
+
 ---
 
 ## What it does
@@ -30,6 +34,7 @@ No cookies, no OAuth flow of its own, no server. It shells out to the `claude` b
 - **Pick what shows next to the icon** — session, weekly, or weekly-per-model, from the gear menu. Only options `/usage` actually returned show up.
 - **Threshold alerts** — set a percentage in the gear menu and get a system sound once your selected figure crosses it.
 - **Clear failure state** — if `claude` isn't installed, isn't logged in, or there's no connection, the popover shows a retry screen instead of spinning forever, and the menu bar icon swaps to a warning triangle.
+- **Checks for updates on its own** — polls this repo's GitHub releases on launch and hourly (toggle in the gear menu), and offers a one-click "Update & Restart" that runs `brew upgrade` and reopens the app for you.
 
 <p align="center">
   <img src="assets/menubar-icon.png" alt="Claude Usage menu bar icon" height="24">
