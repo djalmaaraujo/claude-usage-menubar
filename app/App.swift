@@ -167,6 +167,7 @@ final class UpdateChecker: ObservableObject {
     @Published var latestVersion: String?
     @Published var isChecking = false
     @Published var checkError: String?
+    @Published var lastCheckedAt: Date?
 
     private var timer: Timer?
 
@@ -192,7 +193,10 @@ final class UpdateChecker: ObservableObject {
     func check() {
         isChecking = true
         Task {
-            defer { isChecking = false }
+            defer {
+                isChecking = false
+                lastCheckedAt = Date()
+            }
             do {
                 var request = URLRequest(url: URL(string: "https://api.github.com/repos/djalmaaraujo/claude-usage-menubar/releases/latest")!)
                 request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
@@ -224,7 +228,14 @@ final class UpdateChecker: ObservableObject {
                     cont.resume()
                 }
             }
-            NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications/ClaudeUsage.app"))
+            // We're still running the OLD binary at this point, so `open` may just
+            // refocus us instead of starting a fresh process - and then terminate()
+            // kills that same instance, leaving nothing. Detach a delayed, unwaited
+            // relaunch so it only runs after we're truly dead.
+            let relaunch = Process()
+            relaunch.executableURL = URL(fileURLWithPath: "/bin/sh")
+            relaunch.arguments = ["-c", "sleep 1; open /Applications/ClaudeUsage.app"]
+            try? relaunch.run()
             NSApplication.shared.terminate(nil)
         }
     }
@@ -321,14 +332,22 @@ struct ContentView: View {
             Divider()
 
             HStack {
+                // Only show update-check status if it's fresher than the last usage
+                // refresh - otherwise "Up to date" would stick around forever after
+                // one manual check, even once a newer refresh has happened.
+                let updateStatusIsFresh = updateChecker.lastCheckedAt.map { checked in
+                    guard let refreshed = store.lastUpdated else { return true }
+                    return checked > refreshed
+                } ?? false
+
                 if updateChecker.isChecking {
                     Text("Checking for updates…").font(.caption).foregroundColor(.secondary)
-                } else if let updateError = updateChecker.checkError {
+                } else if updateStatusIsFresh, let updateError = updateChecker.checkError {
                     Text(updateError).font(.caption).foregroundColor(.red)
-                } else if updateChecker.latestVersion != nil && !updateChecker.updateAvailable {
+                } else if updateStatusIsFresh, updateChecker.latestVersion != nil, !updateChecker.updateAvailable {
                     Text("Up to date (v\(updateChecker.currentVersion))").font(.caption).foregroundColor(.secondary)
                 } else if let updated = store.lastUpdated {
-                    Text("Last updated: \(updated.formatted(date: .omitted, time: .shortened))")
+                    Text("Refreshed at \(updated.formatted(date: .omitted, time: .shortened))")
                         .font(.caption).foregroundColor(.secondary)
                 }
                 Spacer()
