@@ -32,6 +32,9 @@ No cookies, no OAuth flow of its own, no server. It shells out to the `claude` b
 - **Clear failure state** — if `claude` isn't installed, isn't logged in, or there's no connection, the popover shows a retry screen instead of spinning forever, and the menu bar icon swaps to a warning triangle.
 
 <p align="center">
+  <img src="assets/menubar-icon.png" alt="Claude Usage menu bar icon" height="24">
+</p>
+<p align="center">
   <img src="assets/screenshot-dark.png" alt="Claude Usage popover, dark mode" width="280">
   <img src="assets/screenshot-light.png" alt="Claude Usage popover, light mode" width="280">
 </p>
