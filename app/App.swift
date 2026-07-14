@@ -15,8 +15,13 @@ let menuBarMarkImage: NSImage = {
     return image
 }()
 
+enum BlockKind: String {
+    case session, weeklyAll, weeklyModel
+}
+
 struct UsageBlock: Identifiable {
     let id = UUID()
+    let kind: BlockKind
     let label: String
     let percent: Int
     let resets: String
@@ -35,13 +40,13 @@ func regexMatch(_ pattern: String, in text: String) -> [String]? {
 func parseUsage(_ text: String) -> [UsageBlock] {
     var blocks: [UsageBlock] = []
     if let m = regexMatch(#"Current session:\s*(\d+)% used.*?resets ([^\n]+)"#, in: text) {
-        blocks.append(UsageBlock(label: "Session (5 hour)", percent: Int(m[0]) ?? 0, resets: m[1]))
+        blocks.append(UsageBlock(kind: .session, label: "Session (5 hour)", percent: Int(m[0]) ?? 0, resets: m[1]))
     }
     if let m = regexMatch(#"Current week \(all models\):\s*(\d+)% used.*?resets ([^\n]+)"#, in: text) {
-        blocks.append(UsageBlock(label: "Weekly (7 day)", percent: Int(m[0]) ?? 0, resets: m[1]))
+        blocks.append(UsageBlock(kind: .weeklyAll, label: "Weekly (7 day)", percent: Int(m[0]) ?? 0, resets: m[1]))
     }
     if let m = regexMatch(#"Current week \((?!all models)([^)]+)\):\s*(\d+)% used.*?resets ([^\n]+)"#, in: text) {
-        blocks.append(UsageBlock(label: "Weekly \(m[0]) (7 day)", percent: Int(m[1]) ?? 0, resets: m[2]))
+        blocks.append(UsageBlock(kind: .weeklyModel, label: "Weekly \(m[0]) (7 day)", percent: Int(m[1]) ?? 0, resets: m[2]))
     }
     return blocks
 }
@@ -51,8 +56,12 @@ final class UsageStore: ObservableObject {
     @Published var blocks: [UsageBlock] = []
     @Published var lastUpdated: Date?
     @Published var errorText: String?
+    @Published var didLoadTrigger = 0
+    @Published var didAlertTrigger = 0
 
     private var timer: Timer?
+    private var hasLoadedOnce = false
+    private var lastAlertedPercent: Int?
 
     init() {
         refresh()
@@ -65,18 +74,35 @@ final class UsageStore: ObservableObject {
         Task {
             do {
                 let text = try await Self.runUsageCommand()
-                self.blocks = parseUsage(text)
+                let newBlocks = parseUsage(text)
+                self.blocks = newBlocks
                 self.lastUpdated = Date()
                 self.errorText = nil
+                if !hasLoadedOnce {
+                    hasLoadedOnce = true
+                    didLoadTrigger += 1
+                }
+                checkThresholdAlert(newBlocks)
             } catch {
-                self.errorText = "Couldn't reach claude CLI"
+                self.errorText = "Make sure claude is installed, you're logged in, and you're online."
             }
         }
     }
 
-    var menuBarTitle: String {
-        guard let session = blocks.first else { return "…" }
-        return "\(session.percent)%"
+    private func checkThresholdAlert(_ blocks: [UsageBlock]) {
+        let d = UserDefaults.standard
+        guard d.bool(forKey: "alertsEnabled") else { lastAlertedPercent = nil; return }
+        let threshold = d.object(forKey: "alertThreshold") as? Int ?? 90
+        let kindRaw = d.string(forKey: "menuBarSourceKind") ?? BlockKind.session.rawValue
+        guard let block = blocks.first(where: { $0.kind.rawValue == kindRaw }) ?? blocks.first else { return }
+        if block.percent >= threshold {
+            guard lastAlertedPercent == nil else { return }
+            lastAlertedPercent = block.percent
+            NSSound(named: "Glass")?.play()
+            didAlertTrigger += 1
+        } else {
+            lastAlertedPercent = nil
+        }
     }
 
     private static func runUsageCommand() async throws -> String {
@@ -146,6 +172,10 @@ let repoURL = URL(string: "https://github.com/djalmaaraujo/claude-usage-menubar"
 struct ContentView: View {
     @ObservedObject var store: UsageStore
     @AppStorage("showProgressInMenuBar") private var showProgress = true
+    @AppStorage("allowAnimations") private var allowAnimations = true
+    @AppStorage("menuBarSourceKind") private var menuBarSourceKind = BlockKind.session.rawValue
+    @AppStorage("alertsEnabled") private var alertsEnabled = false
+    @AppStorage("alertThreshold") private var alertThreshold = 90
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -159,7 +189,21 @@ struct ContentView: View {
             }
 
             if let error = store.errorText {
-                Text(error).foregroundColor(.red)
+                VStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 28))
+                        .foregroundColor(.orange)
+                    Text("Can't reach Claude")
+                        .font(.headline)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("Retry") { store.refresh() }
+                        .padding(.top, 4)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
             } else if store.blocks.isEmpty {
                 Text("Loading…").foregroundColor(.secondary)
             } else {
@@ -175,7 +219,22 @@ struct ContentView: View {
                 }
                 Spacer()
                 Menu {
+                    if !store.blocks.isEmpty {
+                        Section("Show in menu bar") {
+                            Picker("", selection: $menuBarSourceKind) {
+                                ForEach(store.blocks) { block in
+                                    Text(block.label).tag(block.kind.rawValue)
+                                }
+                            }
+                            .pickerStyle(.inline)
+                        }
+                    }
                     Toggle("Show progress in menubar", isOn: $showProgress)
+                    Toggle("Allow animations", isOn: $allowAnimations)
+                    Section("Alerts") {
+                        Toggle("Alert at threshold", isOn: $alertsEnabled)
+                        Stepper("Threshold: \(alertThreshold)%", value: $alertThreshold, in: 1...100, step: 5)
+                    }
                     Button("GitHub") { NSWorkspace.shared.open(repoURL) }
                     Divider()
                     Button("Quit") { NSApplication.shared.terminate(nil) }
@@ -196,18 +255,41 @@ struct ContentView: View {
 struct ClaudeUsageMenuApp: App {
     @StateObject private var store = UsageStore()
     @AppStorage("showProgressInMenuBar") private var showProgress = true
+    @AppStorage("allowAnimations") private var allowAnimations = true
+    @AppStorage("menuBarSourceKind") private var menuBarSourceKind = BlockKind.session.rawValue
+    @State private var bounce = false
+
+    var menuBarTitle: String? {
+        guard store.errorText == nil, !store.blocks.isEmpty else { return nil }
+        let block = store.blocks.first(where: { $0.kind.rawValue == menuBarSourceKind }) ?? store.blocks.first
+        return block.map { "\($0.percent)%" }
+    }
 
     var body: some Scene {
         MenuBarExtra {
             ContentView(store: store)
         } label: {
             HStack(spacing: 0) {
-                Image(nsImage: menuBarMarkImage)
-                if showProgress {
-                    Text(" \(store.menuBarTitle)")
+                if store.errorText != nil {
+                    Image(systemName: "exclamationmark.triangle")
+                } else {
+                    Image(nsImage: menuBarMarkImage)
+                }
+                if showProgress, let title = menuBarTitle {
+                    Text(" \(title)")
                 }
             }
+            .scaleEffect(bounce ? 1.35 : 1.0)
+            .animation(.interpolatingSpring(stiffness: 300, damping: 10), value: bounce)
+            .onChange(of: store.didLoadTrigger) { _ in triggerBounce() }
+            .onChange(of: store.didAlertTrigger) { _ in triggerBounce() }
         }
         .menuBarExtraStyle(.window)
+    }
+
+    private func triggerBounce() {
+        guard allowAnimations else { return }
+        bounce = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { bounce = false }
     }
 }
