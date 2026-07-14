@@ -1,5 +1,44 @@
 import SwiftUI
 
+// Claude Code mark, drawn as a vector Shape instead of a bundled PNG - loading
+// it as a template NSImage rendered as a broken/generic asterisk glyph in the
+// real NSStatusItem (even though the PNG itself was pixel-correct in
+// isolation). Pure SwiftUI drawing sidesteps that entirely.
+struct ClaudeCodeMark: Shape {
+    func path(in rect: CGRect) -> Path {
+        let scale = rect.height / 15.0
+        func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: rect.minX + x * scale, y: rect.minY + (y - 5) * scale)
+        }
+
+        var path = Path()
+        path.move(to: pt(20.998, 10.949))
+        for p in [(20.998, 10.949), (24, 10.949), (24, 14.051), (21, 14.051), (21, 17.079),
+                  (19.513, 17.079), (19.513, 20), (18, 20), (18, 17.079), (16.513, 17.079),
+                  (16.513, 20), (15, 20), (15, 17.079), (9, 17.079), (9, 20), (7.488, 20),
+                  (7.488, 17.079), (6, 17.079), (6, 20), (4.487, 20), (4.487, 17.079),
+                  (3, 17.079), (3, 14.05), (0, 14.05), (0, 10.95), (3, 10.95), (3, 5),
+                  (20.998, 5), (20.998, 10.949)] {
+            path.addLine(to: pt(CGFloat(p.0), CGFloat(p.1)))
+        }
+        path.closeSubpath()
+
+        path.move(to: pt(6, 10.949))
+        for p in [(6, 10.949), (7.488, 10.949), (7.488, 8.102), (6, 8.102), (6, 10.949)] {
+            path.addLine(to: pt(CGFloat(p.0), CGFloat(p.1)))
+        }
+        path.closeSubpath()
+
+        path.move(to: pt(16.51, 10.949))
+        for p in [(16.51, 10.949), (18, 10.949), (18, 8.102), (16.51, 8.102), (16.51, 10.949)] {
+            path.addLine(to: pt(CGFloat(p.0), CGFloat(p.1)))
+        }
+        path.closeSubpath()
+
+        return path
+    }
+}
+
 struct UsageBlock: Identifiable {
     let id = UUID()
     let label: String
@@ -185,10 +224,12 @@ struct ClaudeUsageMenuApp: App {
         MenuBarExtra {
             ContentView(store: store)
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "sparkle")
+            HStack(spacing: 0) {
+                ClaudeCodeMark()
+                    .fill(style: FillStyle(eoFill: true))
+                    .frame(width: 12 * (24.0 / 15.0), height: 12)
                 if showProgress {
-                    Text(store.menuBarTitle)
+                    Text(" \(store.menuBarTitle)")
                 }
             }
         }

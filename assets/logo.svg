@@ -13,15 +13,14 @@
   <!-- badge -->
   <rect x="20" y="30" width="160" height="160" rx="35" fill="url(#bgGrad)" stroke="url(#strokeGrad)" stroke-width="4"/>
 
-  <!-- sparkle glyph (four-point twinkle, curved sides) -->
-  <path d="M100 62
-           C103 92 103 92 133 100
-           C103 108 103 108 100 138
-           C97 108 97 108 67 100
-           C97 92 97 92 100 62 Z" fill="url(#strokeGrad)"/>
+  <!-- Claude Code mark, scaled + centered in the badge -->
+  <g transform="translate(45,32.083) scale(4.5833)" fill="url(#strokeGrad)" fill-rule="evenodd">
+    <path clip-rule="evenodd"
+          d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/>
+  </g>
 
   <!-- percent sign -->
-  <text x="118" y="172" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="30" font-weight="700" fill="#e2e8f0">%</text>
+  <text x="100" y="160" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="30" font-weight="700" fill="#e2e8f0">%</text>
 
   <!-- Wordmark -->
   <text x="210" y="118" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="52" font-weight="700" fill="#e2e8f0">claude usage</text>
