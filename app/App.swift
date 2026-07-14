@@ -163,8 +163,13 @@ struct ClaudeUsageMenuApp: App {
     @StateObject private var store = UsageStore()
 
     var body: some Scene {
-        MenuBarExtra(store.menuBarTitle, systemImage: "sparkle") {
+        MenuBarExtra {
             ContentView(store: store)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "sparkle")
+                Text(store.menuBarTitle)
+            }
         }
         .menuBarExtraStyle(.window)
     }
