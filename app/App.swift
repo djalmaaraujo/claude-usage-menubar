@@ -121,8 +121,18 @@ final class UsageStore: ObservableObject {
 
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: claudePath)
-                process.arguments = ["-p", "/usage", "--output-format", "json"]
+                // --safe-mode skips plugin/MCP/hook loading (some plugin was triggering
+                // macOS Photos/Downloads permission prompts on every launch) while still
+                // reading the existing OAuth session - unlike --bare, which also disables
+                // keychain reads and would break auth for subscription (non-API-key) users.
+                process.arguments = ["--safe-mode", "-p", "/usage", "--output-format", "json"]
                 process.environment = env
+                // A GUI app launched from Finder/LaunchServices has no real cwd (usually
+                // "/"), unlike Terminal which always starts at $HOME. claude likely falls
+                // back to probing common folders (Desktop, Downloads...) when cwd doesn't
+                // look like a normal project location - anchoring to $HOME mimics how
+                // everyone already runs it from Terminal, where this never happens.
+                process.currentDirectoryURL = URL(fileURLWithPath: NSHomeDirectory())
                 process.standardInput = FileHandle.nullDevice
                 let pipe = Pipe()
                 process.standardOutput = pipe
@@ -148,6 +158,89 @@ final class UsageStore: ObservableObject {
     }
 }
 
+struct GitHubRelease: Decodable {
+    let tag_name: String
+}
+
+@MainActor
+final class UpdateChecker: ObservableObject {
+    @Published var latestVersion: String?
+    @Published var isChecking = false
+    @Published var checkError: String?
+
+    private var timer: Timer?
+
+    var currentVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+    }
+
+    var updateAvailable: Bool {
+        guard let latest = latestVersion else { return false }
+        return Self.isNewer(latest, than: currentVersion)
+    }
+
+    init() {
+        if UserDefaults.standard.object(forKey: "autoCheckUpdates") as? Bool ?? true {
+            check()
+        }
+        timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+            guard UserDefaults.standard.object(forKey: "autoCheckUpdates") as? Bool ?? true else { return }
+            Task { @MainActor in self?.check() }
+        }
+    }
+
+    func check() {
+        isChecking = true
+        Task {
+            defer { isChecking = false }
+            do {
+                var request = URLRequest(url: URL(string: "https://api.github.com/repos/djalmaaraujo/claude-usage-menubar/releases/latest")!)
+                request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+                let (data, _) = try await URLSession.shared.data(for: request)
+                let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
+                latestVersion = release.tag_name.hasPrefix("v") ? String(release.tag_name.dropFirst()) : release.tag_name
+                checkError = nil
+            } catch {
+                checkError = "Couldn't check for updates"
+            }
+        }
+    }
+
+    func updateAndRestart() {
+        Task {
+            let brewCandidates = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"]
+            guard let brewPath = brewCandidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
+                checkError = "Homebrew not found — run: brew upgrade --cask djalmaaraujo/tap/claude-usage-menubar"
+                return
+            }
+            isChecking = true
+            await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let process = Process()
+                    process.executableURL = URL(fileURLWithPath: brewPath)
+                    process.arguments = ["upgrade", "--cask", "djalmaaraujo/tap/claude-usage-menubar"]
+                    try? process.run()
+                    process.waitUntilExit()
+                    cont.resume()
+                }
+            }
+            NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications/ClaudeUsage.app"))
+            NSApplication.shared.terminate(nil)
+        }
+    }
+
+    private static func isNewer(_ a: String, than b: String) -> Bool {
+        let pa = a.split(separator: ".").map { Int($0) ?? 0 }
+        let pb = b.split(separator: ".").map { Int($0) ?? 0 }
+        for i in 0..<max(pa.count, pb.count) {
+            let x = i < pa.count ? pa[i] : 0
+            let y = i < pb.count ? pb[i] : 0
+            if x != y { return x > y }
+        }
+        return false
+    }
+}
+
 struct UsageBarView: View {
     let block: UsageBlock
 
@@ -169,10 +262,12 @@ let repoURL = URL(string: "https://github.com/djalmaaraujo/claude-usage-menubar"
 
 struct ContentView: View {
     @ObservedObject var store: UsageStore
+    @ObservedObject var updateChecker: UpdateChecker
     @AppStorage("showProgressInMenuBar") private var showProgress = true
     @AppStorage("menuBarSourceKind") private var menuBarSourceKind = BlockKind.session.rawValue
     @AppStorage("alertsEnabled") private var alertsEnabled = false
     @AppStorage("alertThreshold") private var alertThreshold = 90
+    @AppStorage("autoCheckUpdates") private var autoCheckUpdates = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -183,6 +278,22 @@ struct ContentView: View {
                     Image(systemName: "arrow.clockwise")
                 }
                 .buttonStyle(.plain)
+            }
+
+            if updateChecker.updateAvailable, let latest = updateChecker.latestVersion {
+                HStack {
+                    Image(systemName: "arrow.up.circle.fill").foregroundColor(.blue)
+                    Text("Version \(latest) available").font(.caption)
+                    Spacer()
+                    Button(updateChecker.isChecking ? "Updating…" : "Update & Restart") {
+                        updateChecker.updateAndRestart()
+                    }
+                    .disabled(updateChecker.isChecking)
+                    .font(.caption)
+                }
+                .padding(8)
+                .background(Color.blue.opacity(0.12))
+                .cornerRadius(8)
             }
 
             if let error = store.errorText {
@@ -216,20 +327,31 @@ struct ContentView: View {
                 }
                 Spacer()
                 Menu {
-                    if !store.blocks.isEmpty {
-                        Section("Show in menu bar") {
-                            Picker("", selection: $menuBarSourceKind) {
-                                ForEach(store.blocks) { block in
-                                    Text(block.label).tag(block.kind.rawValue)
-                                }
-                            }
-                            .pickerStyle(.inline)
-                        }
-                    }
                     Toggle("Show progress in menubar", isOn: $showProgress)
-                    Section("Alerts (tracks \"Show in menu bar\" above)") {
+                    if !store.blocks.isEmpty {
+                        Picker("Menu bar percentage", selection: $menuBarSourceKind) {
+                            ForEach(store.blocks) { block in
+                                Text(block.label).tag(block.kind.rawValue)
+                            }
+                        }
+                        .pickerStyle(.inline)
+                    }
+                    Section("Alerts (tracks the percentage above)") {
                         Toggle("Alert at threshold", isOn: $alertsEnabled)
                         Stepper("Threshold: \(alertThreshold)%", value: $alertThreshold, in: 1...100, step: 5)
+                    }
+                    Section("Updates") {
+                        Toggle("Check for updates automatically", isOn: Binding(
+                            get: { autoCheckUpdates },
+                            set: { newValue in
+                                autoCheckUpdates = newValue
+                                if newValue { updateChecker.check() }
+                            }
+                        ))
+                        Button(updateChecker.isChecking ? "Checking…" : "Check for Updates Now") {
+                            updateChecker.check()
+                        }
+                        .disabled(updateChecker.isChecking)
                     }
                     Button("GitHub") { NSWorkspace.shared.open(repoURL) }
                     Divider()
@@ -250,6 +372,7 @@ struct ContentView: View {
 @main
 struct ClaudeUsageMenuApp: App {
     @StateObject private var store = UsageStore()
+    @StateObject private var updateChecker = UpdateChecker()
     @AppStorage("showProgressInMenuBar") private var showProgress = true
     @AppStorage("menuBarSourceKind") private var menuBarSourceKind = BlockKind.session.rawValue
     @AppStorage("alertsEnabled") private var alertsEnabled = false
@@ -275,7 +398,7 @@ struct ClaudeUsageMenuApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            ContentView(store: store)
+            ContentView(store: store, updateChecker: updateChecker)
         } label: {
             HStack(spacing: 0) {
                 if store.errorText != nil {
