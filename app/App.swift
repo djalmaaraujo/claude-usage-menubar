@@ -137,15 +137,6 @@ struct ContentView: View {
             HStack {
                 Text("Claude Usage").font(.title2).bold()
                 Spacer()
-                Menu {
-                    Toggle("Show progress in menubar", isOn: $showProgress)
-                    Divider()
-                    Button("Quit") { NSApplication.shared.terminate(nil) }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                }
-                .menuIndicator(.hidden)
-                .fixedSize()
                 Button { store.refresh() } label: {
                     Image(systemName: "arrow.clockwise")
                 }
@@ -168,10 +159,16 @@ struct ContentView: View {
                         .font(.caption).foregroundColor(.secondary)
                 }
                 Spacer()
-                Button { NSWorkspace.shared.open(repoURL) } label: {
-                    Image(systemName: "chevron.left.forwardslash.chevron.right")
+                Menu {
+                    Toggle("Show progress in menubar", isOn: $showProgress)
+                    Button("GitHub") { NSWorkspace.shared.open(repoURL) }
+                    Divider()
+                    Button("Quit") { NSApplication.shared.terminate(nil) }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
-                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+                .fixedSize()
             }
         }
         .padding(16)
