@@ -342,10 +342,23 @@ final class UpdateChecker: ObservableObject {
         // `brew upgrade` only sees new cask versions after the tap's local clone
         // is refreshed - without `brew update` first, it just sees the old
         // version as "latest" and does nothing (reopens the same build).
-        let script = "\"\(brewPath)\" update; \"\(brewPath)\" upgrade --cask djalmaaraujo/tap/claude-usage-menubar; open /Applications/ClaudeUsage.app"
+        // stdin explicitly /dev/null (not just inherited) - if brew ever prompts
+        // interactively (sudo password, analytics opt-in, etc) a blocked read
+        // would hang this whole chain forever and "open" at the end would never
+        // run, which looks exactly like "quit but never reopened". Logging to
+        // a file too, since this runs fully detached from us with nowhere else
+        // to surface a failure - a stuck/failed update is otherwise invisible.
+        let logPath = "\(NSHomeDirectory())/Library/Logs/ClaudeUsage-update.log"
+        let script = """
+        { echo "=== update $(date) ==="; \
+        "\(brewPath)" update; \
+        "\(brewPath)" upgrade --cask djalmaaraujo/tap/claude-usage-menubar; echo "upgrade exit: $?"; \
+        open /Applications/ClaudeUsage.app; echo "open exit: $?"; } </dev/null >> "\(logPath)" 2>&1
+        """
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
         process.arguments = ["-c", script]
+        process.standardInput = FileHandle.nullDevice
         try? process.run()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             NSApplication.shared.terminate(nil)
