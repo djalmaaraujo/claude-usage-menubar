@@ -179,15 +179,48 @@ final class UsageStore: ObservableObject {
         }
     }
 
+    // Covers the common installs directly (fast, no shell spawn). Anything
+    // else - nvm/volta/fnm-managed node, a custom npm prefix, pnpm/yarn
+    // global bin, etc - won't be here, since those all depend on PATH setup
+    // that lives in the user's shell rc files.
+    nonisolated private static let knownClaudePaths = [
+        "\(NSHomeDirectory())/.local/bin/claude",
+        "/opt/homebrew/bin/claude",
+        "/usr/local/bin/claude",
+    ]
+
+    // Fallback for installs the fixed list above misses: ask the user's own
+    // login shell to resolve "claude" the same way Terminal would, so
+    // whatever PATH their rc files build (nvm, volta, custom prefixes, ...)
+    // is honored instead of us guessing fixed locations.
+    nonisolated private static func resolveClaudePathViaLoginShell() -> String? {
+        let shellPath = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: shellPath)
+        // -l -i: source the same profile/rc files an interactive Terminal
+        // session would, so PATH matches what the user actually has.
+        process.arguments = ["-l", "-i", "-c", "command -v claude"]
+        process.standardInput = FileHandle.nullDevice
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+        guard (try? process.run()) != nil else { return nil }
+        DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
+            if process.isRunning { process.terminate() }
+        }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        let path = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let path, !path.isEmpty, FileManager.default.isExecutableFile(atPath: path) else { return nil }
+        return path
+    }
+
     private static func runUsageCommand() async throws -> String {
         try await withCheckedThrowingContinuation { cont in
             DispatchQueue.global(qos: .utility).async {
-                let candidates = [
-                    "\(NSHomeDirectory())/.local/bin/claude",
-                    "/opt/homebrew/bin/claude",
-                    "/usr/local/bin/claude",
-                ]
-                guard let claudePath = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
+                let resolved = knownClaudePaths.first(where: { FileManager.default.isExecutableFile(atPath: $0) })
+                    ?? resolveClaudePathViaLoginShell()
+                guard let claudePath = resolved else {
                     cont.resume(throwing: NSError(domain: "usage", code: 2, userInfo: [NSLocalizedDescriptionKey: "claude CLI not found"]))
                     return
                 }
