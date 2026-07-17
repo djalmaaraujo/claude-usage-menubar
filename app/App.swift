@@ -1,5 +1,26 @@
 import SwiftUI
 
+// Plan tier (e.g. "Max 5x"), read once from ~/.claude.json - not part of
+// /usage's own output. Nil (shows nothing) if the file, field, or a
+// recognizable format isn't there, e.g. API-key auth instead of a
+// subscription.
+let claudePlanName: String? = {
+    let path = "\(NSHomeDirectory())/.claude.json"
+    guard let data = FileManager.default.contents(atPath: path),
+          let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let oauth = json["oauthAccount"] as? [String: Any],
+          var tier = oauth["organizationRateLimitTier"] as? String,
+          !tier.isEmpty
+    else { return nil }
+    if tier.hasPrefix("default_") { tier.removeFirst("default_".count) }
+    if tier.hasPrefix("claude_") { tier.removeFirst("claude_".count) }
+    let words = tier.split(separator: "_").map { part -> String in
+        if part.hasSuffix("x"), Int(part.dropLast()) != nil { return String(part) }
+        return part.prefix(1).uppercased() + part.dropFirst()
+    }
+    return words.isEmpty ? nil : words.joined(separator: " ")
+}()
+
 // Claude Code mark for the menu bar. Loaded as a template NSImage with its
 // .size set explicitly (in points) - and displayed with NO .resizable()/
 // .frame() modifiers, so SwiftUI uses that intrinsic size directly, same as
@@ -52,16 +73,37 @@ func regexMatch(_ pattern: String, in text: String) -> [String]? {
     }
 }
 
+// claude's `/usage` output is free-form chat prose, not a stable API - the
+// surrounding text (plan blurb, "What's contributing" breakdown, section
+// order/presence) has changed before and will again. Anchoring to the whole
+// multi-line shape is brittle. Instead scan line-by-line for the one
+// substring that's actually load-bearing: "<label>: N% used", optionally
+// followed by "resets ...". Everything else on the line (or around it) is
+// ignored, so unrelated prose changes can't break parsing.
+private let usageLinePattern = #"^(.+?):\s*(\d+)% used(?:.*?resets (.+))?$"#
+
 func parseUsage(_ text: String) -> [UsageBlock] {
     var blocks: [UsageBlock] = []
-    if let m = regexMatch(#"Current session:\s*(\d+)% used.*?resets ([^\n]+)"#, in: text) {
-        blocks.append(UsageBlock(kind: .session, label: "Session (5 hour)", percent: Int(m[0]) ?? 0, resets: m[1]))
-    }
-    if let m = regexMatch(#"Current week \(all models\):\s*(\d+)% used.*?resets ([^\n]+)"#, in: text) {
-        blocks.append(UsageBlock(kind: .weeklyAll, label: "Weekly (7 day)", percent: Int(m[0]) ?? 0, resets: m[1]))
-    }
-    if let m = regexMatch(#"Current week \((?!all models)([^)]+)\):\s*(\d+)% used.*?resets ([^\n]+)"#, in: text) {
-        blocks.append(UsageBlock(kind: .weeklyModel, label: "Weekly \(m[0]) (7 day)", percent: Int(m[1]) ?? 0, resets: m[2]))
+    var weeklyAllResets = ""
+    for line in text.components(separatedBy: "\n") {
+        guard let m = regexMatch(usageLinePattern, in: line) else { continue }
+        let label = m[0].trimmingCharacters(in: .whitespaces)
+        let percent = Int(m[1]) ?? 0
+        let lowered = label.lowercased()
+        guard lowered.contains("session") || lowered.contains("week") else { continue }
+
+        if lowered.contains("session") {
+            blocks.append(UsageBlock(kind: .session, label: "Session (5 hour)", percent: percent, resets: m[2]))
+        } else if lowered.contains("all models") {
+            weeklyAllResets = m[2].isEmpty ? weeklyAllResets : m[2]
+            blocks.append(UsageBlock(kind: .weeklyAll, label: "Weekly (7 day)", percent: percent, resets: m[2]))
+        } else {
+            // Per-model weekly lines sometimes omit "resets ..." (it'd just
+            // repeat the "all models" line above) - fall back to that.
+            let model = regexMatch(#"\(([^)]+)\)"#, in: label)?.first ?? label
+            let resets = m[2].isEmpty ? weeklyAllResets : m[2]
+            blocks.append(UsageBlock(kind: .weeklyModel, label: "Weekly \(model) (7 day)", percent: percent, resets: resets))
+        }
     }
     return blocks
 }
@@ -85,14 +127,31 @@ final class UsageStore: ObservableObject {
     func refresh() {
         Task {
             do {
-                let text = try await Self.runUsageCommand()
-                let newBlocks = parseUsage(text)
+                var text = try await Self.runUsageCommand()
+                var newBlocks = parseUsage(text)
+                // Confirmed via real user output: claude's /usage in headless
+                // (-p) mode can succeed (is_error: false) but skip the
+                // "Current session/week" percentage lines entirely, jumping
+                // straight to the "What's contributing" breakdown - a flake
+                // in claude itself, not a connectivity/auth problem. One
+                // retry clears it in practice, so don't surface an error for
+                // what's actually a transient hiccup.
+                if newBlocks.isEmpty {
+                    text = try await Self.runUsageCommand()
+                    newBlocks = parseUsage(text)
+                }
                 guard !newBlocks.isEmpty else {
-                    // claude ran and returned something, but not usage text -
-                    // e.g. an offline/auth error printed as plain text. Treat
-                    // as a failure instead of silently showing an empty state
-                    // that looks like it's still loading forever.
-                    self.errorText = "Got an unexpected response from claude - check your internet connection and that you're logged in."
+                    // Still nothing after retry - could be a genuinely
+                    // unrecognized output shape (API-key billing, wording
+                    // drift) or a persistent claude-side issue. Log the raw
+                    // text so this is actually diagnosable instead of just
+                    // discarding it - "check your internet" is often wrong
+                    // when claude ran fine but the text didn't parse.
+                    NSLog("ClaudeUsage: /usage output didn't match expected format: %@", text)
+                    let snippet = text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(120)
+                    self.errorText = snippet.isEmpty
+                        ? "Got an unexpected (empty) response from claude - check your internet connection and that you're logged in."
+                        : "Got an unexpected response from claude: \"\(snippet)\""
                     return
                 }
                 self.blocks = newBlocks
@@ -303,7 +362,11 @@ struct ContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Claude Usage").font(.title2).bold()
+                if let plan = claudePlanName {
+                    Text("Claude Usage (\(plan))").font(.title2).bold()
+                } else {
+                    Text("Claude Usage").font(.title2).bold()
+                }
                 Spacer()
                 Button { store.refresh() } label: {
                     Image(systemName: "arrow.clockwise")
