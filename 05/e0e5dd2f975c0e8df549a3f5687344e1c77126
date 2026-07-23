@@ -1,0 +1,21 @@
+docs/assets/logo.svg
+  s_013a906a7bde60::t_aa3fbd5c30dc4c 1-30
+docs/index.html
+  s_013a906a7bde60::t_a5512b59c8948d 113,116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "05e0e5dd2f975c0e8df549a3f5687344e1c77126",
+  "prompts": {},
+  "sessions": {
+    "s_013a906a7bde60": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e9e2ee55-a959-41fa-b359-4324cbce6f53",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Djalma Araújo <djalma@nossomos.cc>"
+    }
+  }
+}
