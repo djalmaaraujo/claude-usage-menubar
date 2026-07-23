@@ -3,6 +3,10 @@
 </p>
 
 <p align="center">
+  <a href="https://djalmaaraujo.github.io/claude-usage-menubar/">djalmaaraujo.github.io/claude-usage-menubar</a>
+</p>
+
+<p align="center">
   <strong>Your Claude Code quota, live in the menu bar.</strong><br>
   Reads straight from the <code>claude</code> CLI on your machine — no browser cookie, no login, no network calls beyond your own Anthropic account.
 </p>
