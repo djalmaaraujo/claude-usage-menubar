@@ -16,9 +16,8 @@ struct NotchAlertView: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 11))
-                .foregroundColor(.yellow)
+            Image(nsImage: menuBarAlertImage)
+                .foregroundColor(.white)
             Text("\(percent)% · \(label)")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.white)
@@ -57,8 +56,14 @@ final class NotchAlertController {
         dismissWorkItem?.cancel()
         panel?.orderOut(nil)
 
+        // The notch is a physical display cutout on a MacBook (unlike iOS's
+        // Dynamic Island, which is fully software-rendered around a camera
+        // hole that sits within real pixels) - there are literally no pixels
+        // to draw on inside auxiliaryTop{Left,Right}Area's Y band, so the
+        // pill has to hang from the bottom edge of that cutout downward into
+        // the actual visible menu bar area, not overlap the cutout itself.
         let centerX = (left.maxX + right.minX) / 2
-        let originY = screen.frame.maxY - Self.panelHeight - 2
+        let originY = screen.frame.maxY - screen.safeAreaInsets.top - Self.panelHeight
         let collapsedFrame = NSRect(x: centerX - Self.collapsedWidth / 2, y: originY, width: Self.collapsedWidth, height: Self.panelHeight)
 
         // Size the expanded panel to the content's actual rendered width so
