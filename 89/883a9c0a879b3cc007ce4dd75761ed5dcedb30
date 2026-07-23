@@ -1,0 +1,21 @@
+docs/superpowers/specs/2026-07-23-notch-alert-design.md
+  s_013a906a7bde60::t_655aee3f7f76ab 1-128
+docs/superpowers/plans/2026-07-23-notch-alert.md
+  s_013a906a7bde60::t_655aee3f7f76ab 1-395
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "89883a9c0a879b3cc007ce4dd75761ed5dcedb30",
+  "prompts": {},
+  "sessions": {
+    "s_013a906a7bde60": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e9e2ee55-a959-41fa-b359-4324cbce6f53",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Djalma Araújo <djalma@nossomos.cc>"
+    }
+  }
+}
