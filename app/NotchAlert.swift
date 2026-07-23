@@ -36,7 +36,6 @@ final class NotchAlertController {
     static let shared = NotchAlertController()
 
     private static let collapsedWidth: CGFloat = 40
-    private static let expandedWidth: CGFloat = 200
     private static let panelHeight: CGFloat = 32
     private static let visibleDuration: TimeInterval = 5
 
@@ -57,9 +56,16 @@ final class NotchAlertController {
         let centerX = (left.maxX + right.minX) / 2
         let originY = screen.frame.maxY - Self.panelHeight - 2
         let collapsedFrame = NSRect(x: centerX - Self.collapsedWidth / 2, y: originY, width: Self.collapsedWidth, height: Self.panelHeight)
-        let expandedFrame = NSRect(x: centerX - Self.expandedWidth / 2, y: originY, width: Self.expandedWidth, height: Self.panelHeight)
 
+        // Size the expanded panel to the content's actual rendered width so
+        // longer labels don't get clipped mid-word. Clamp to roughly a third
+        // of the screen so a pathologically long label can't produce an
+        // absurd panel (the view's own .lineLimit(1) truncates gracefully
+        // if the clamp kicks in).
         let hostingView = NSHostingView(rootView: NotchAlertView(percent: percent, label: label))
+        let maxExpandedWidth = screen.frame.width / 3
+        let expandedWidth = min(max(hostingView.fittingSize.width, Self.collapsedWidth), maxExpandedWidth)
+        let expandedFrame = NSRect(x: centerX - expandedWidth / 2, y: originY, width: expandedWidth, height: Self.panelHeight)
         hostingView.frame = NSRect(origin: .zero, size: expandedFrame.size)
 
         let newPanel = NSPanel(
@@ -110,8 +116,15 @@ final class NotchAlertController {
             panel.animator().alphaValue = 0
             panel.animator().setFrame(collapsedFrame, display: true)
         }, completionHandler: { [weak self] in
-            panel.orderOut(nil)
-            if self?.panel === panel { self?.panel = nil }
+            // Wrapping in DispatchQueue.main.async (rather than touching
+            // `panel`/`self` directly in this completion closure) is what
+            // makes the compiler recognize main-actor isolation here - this
+            // closure runs on the main thread either way, so there's no
+            // functional change, just satisfying Swift's Sendable checking.
+            DispatchQueue.main.async {
+                panel.orderOut(nil)
+                if self?.panel === panel { self?.panel = nil }
+            }
         })
     }
 }
