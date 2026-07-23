@@ -28,6 +28,10 @@ struct NotchAlertView: View {
         .frame(height: 32)
         .background(Color.black)
         .clipShape(Capsule())
+        .contentShape(Capsule())
+        .onTapGesture {
+            NotchAlertController.shared.handleClick()
+        }
     }
 }
 
@@ -126,5 +130,18 @@ final class NotchAlertController {
                 if self?.panel === panel { self?.panel = nil }
             }
         })
+    }
+
+    func handleClick() {
+        dismiss()
+        openMainPopover()
+    }
+
+    private func openMainPopover() {
+        guard let statusBarWindow = NSApp.windows.first(where: {
+            String(describing: type(of: $0)) == "NSStatusBarWindow"
+        }), let statusItem = statusBarWindow.value(forKey: "statusItem") as? NSStatusItem
+        else { return }
+        statusItem.button?.performClick(nil)
     }
 }
