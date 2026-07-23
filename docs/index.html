@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Usage — your Claude Code quota, live in the menu bar</title>
+<meta name="description" content="A macOS menu bar app that shows your Claude Code usage. Zero tokens consumed, zero dependencies, free and open source.">
+<style>
+  :root {
+    --bg-start: #0f172a;
+    --bg-end: #1e1b4b;
+    --accent-a: #22d3ee;
+    --accent-b: #6366f1;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --font: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font);
+    color: var(--text);
+    background: linear-gradient(160deg, var(--bg-start), var(--bg-end));
+    background-attachment: fixed;
+    line-height: 1.6;
+  }
+  main {
+    max-width: 840px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  section {
+    padding: 96px 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  }
+  section:last-of-type { border-bottom: none; }
+  h1 {
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 32px 0 16px;
+  }
+  h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0 0 32px;
+  }
+  p { color: var(--text-dim); font-size: 1.05rem; }
+  .tagline { font-size: 1.2rem; color: var(--text-dim); max-width: 560px; }
+  .accent {
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero { text-align: center; padding-top: 120px; }
+  .hero img.logo { width: min(480px, 90vw); height: auto; }
+  .install-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 40px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 10px;
+    padding: 14px 20px;
+  }
+  .install-row code { color: var(--text); font-size: 0.95rem; }
+  .copy-btn {
+    font-family: var(--font);
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+    color: #0f172a;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .copy-btn:active { opacity: 0.85; }
+  .links { margin-top: 24px; }
+  .links a { color: var(--text-dim); text-decoration: none; margin: 0 12px; border-bottom: 1px solid transparent; }
+  .links a:hover { color: var(--text); border-bottom-color: var(--accent-a); }
+  .screens { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-top: 40px; }
+  .screens img { width: 300px; max-width: 100%; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.2); }
+  .screens figcaption { color: var(--text-dim); font-size: 0.85rem; text-align: center; margin-top: 8px; }
+  ul.limits { color: var(--text-dim); padding-left: 20px; }
+  ul.limits li { margin-bottom: 10px; }
+  .faq-item { margin-bottom: 32px; }
+  .faq-item h3 { font-size: 1.05rem; margin: 0 0 8px; color: var(--text); }
+  .faq-item p { margin: 0; }
+  footer {
+    text-align: center;
+    padding: 64px 0 96px;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+  }
+  footer a { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<main>
+
+  <section class="hero">
+    <img class="logo" src="../assets/logo.svg" alt="Claude Usage logo">
+    <h1>Your Claude Code quota,<br><span class="accent">live in the menu bar.</span></h1>
+    <p class="tagline" style="margin: 0 auto;">Reads straight from the <code>claude</code> CLI on your machine — no browser cookie, no login, no network calls beyond your own Anthropic account.</p>
+
+    <div class="install-row">
+      <code id="install-cmd">brew install djalmaaraujo/tap/claude-usage-menubar</code>
+      <button class="copy-btn" onclick="copyInstall()">Copy</button>
+    </div>
+
+    <div class="links">
+      <a href="https://github.com/djalmaaraujo/claude-usage-menubar">GitHub</a>
+      <a href="https://github.com/djalmaaraujo/claude-usage-menubar#build-from-source">Build from source</a>
+    </div>
+  </section>
+
+  <section>
+    <h2>Zero tokens to check your usage</h2>
+    <p><code>/usage</code> is a Claude Code CLI command answered entirely locally — it never reaches the model. The app just automates typing it every 60 seconds and turns the reply into progress bars. No hidden cost, no extra spend, ever.</p>
+  </section>
+
+  <section>
+    <h2>See it in your menu bar</h2>
+    <div class="screens">
+      <figure>
+        <img src="../assets/screenshot-dark.png" alt="Claude Usage popover in dark mode">
+        <figcaption>Dark mode</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/screenshot-light.png" alt="Claude Usage popover in light mode">
+        <figcaption>Light mode</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Install</h2>
+    <p>Homebrew (recommended):</p>
+    <div class="install-row">
+      <code>brew install djalmaaraujo/tap/claude-usage-menubar</code>
+      <button class="copy-btn" onclick="copyInstall()">Copy</button>
+    </div>
+    <p style="margin-top: 24px;">Prefer to build it yourself? See <a href="https://github.com/djalmaaraujo/claude-usage-menubar#build-from-source" style="color: var(--text);">build from source</a> in the README.</p>
+  </section>
+
+  <section>
+    <h2>Requirements &amp; limitations</h2>
+    <ul class="limits">
+      <li>macOS 13 or later.</li>
+      <li>The <a href="https://claude.com/claude-code" style="color: var(--text-dim);">Claude Code CLI</a> installed and logged in — this app has no login flow of its own, it reads the same session the CLI already has.</li>
+      <li>No Linux or Windows support.</li>
+      <li>Not a hosted service — everything runs locally on your machine.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>FAQ</h2>
+
+    <div class="faq-item">
+      <h3>Does it consume tokens to calculate usage?</h3>
+      <p>No — <code>/usage</code> is intercepted locally by the CLI, never reaches the model. Zero cost.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Does it work on Linux or Windows?</h3>
+      <p>No, macOS only (13+).</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Does it cost anything?</h3>
+      <p>Completely free and open source (MIT).</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Any plans to support other LLMs?</h3>
+      <p>No.</p>
+    </div>
+  </section>
+
+  <footer>
+    <a href="https://github.com/djalmaaraujo/claude-usage-menubar">github.com/djalmaaraujo/claude-usage-menubar</a><br>
+    MIT License
+  </footer>
+
+</main>
+<script>
+  function copyInstall() {
+    navigator.clipboard.writeText("brew install djalmaaraujo/tap/claude-usage-menubar");
+  }
+</script>
+</body>
+</html>
