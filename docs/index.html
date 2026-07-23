@@ -25,7 +25,7 @@
     line-height: 1.6;
   }
   main {
-    max-width: 840px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 0 24px;
   }
@@ -35,7 +35,7 @@
   }
   section:last-of-type { border-bottom: none; }
   h1 {
-    font-size: clamp(1.7rem, 3.6vw, 2.4rem);
+    font-size: clamp(2rem, 4.2vw, 2.8rem);
     font-weight: 700;
     line-height: 1.15;
     margin: 32px 0 16px;
@@ -94,11 +94,15 @@
   }
   .two-col > div { padding: 0; border: none; }
   .two-col h2 { font-size: 1.35rem; margin-bottom: 20px; }
-  .two-col .screens { justify-content: flex-start; margin-top: 16px; }
+  .two-col .screens { justify-content: flex-start; flex-wrap: nowrap; gap: 14px; margin-top: 16px; }
+  .two-col .screens img { width: 47%; }
   @media (max-width: 760px) {
     .two-col { grid-template-columns: 1fr; gap: 64px; padding: 64px 0; }
     .two-col .screens { justify-content: center; }
   }
+  .stats { color: var(--text-dim); font-size: 0.9rem; margin-top: 20px; }
+  ul.features { color: var(--text-dim); padding-left: 20px; font-size: 1.05rem; }
+  ul.features li { margin-bottom: 12px; }
   ul.limits { color: var(--text-dim); padding-left: 20px; }
   ul.limits li { margin-bottom: 10px; }
   .faq-item { margin-bottom: 32px; }
@@ -130,6 +134,8 @@
       <a href="https://github.com/djalmaaraujo/claude-usage-menubar">GitHub</a>
       <a href="https://github.com/djalmaaraujo/claude-usage-menubar#build-from-source">Build from source</a>
     </div>
+
+    <p class="stats">Fully native — no Electron · &lt;3MB on disk · &lt;30MB memory</p>
   </section>
 
   <div class="two-col">
@@ -151,6 +157,18 @@
       </div>
     </div>
   </div>
+
+  <section>
+    <h2>Features</h2>
+    <ul class="features">
+      <li>Three progress bars: session (5 hour), weekly (7 day), and weekly for the model you're actively using.</li>
+      <li>Pick what shows next to the menu bar icon — session, weekly, or weekly-per-model.</li>
+      <li>Threshold alerts — set a percentage and get a system sound once your selected figure crosses it.</li>
+      <li>Notch alert panel — on notched MacBooks, a Dynamic-Island-style pill expands over the notch when your threshold is crossed.</li>
+      <li>Clear failure state — a retry screen instead of spinning forever if <code>claude</code> isn't installed, isn't logged in, or there's no connection.</li>
+      <li>Checks for updates on its own, with a one-click "Update &amp; Restart".</li>
+    </ul>
+  </section>
 
   <section>
     <h2>Install</h2>
