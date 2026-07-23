@@ -1,0 +1,21 @@
+app/NotchAlert.swift
+  s_013a906a7bde60::t_61e2cfb94df400 1-10
+app/build.sh
+  s_013a906a7bde60::t_4129d9571aef14 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "14f9a5490a2c49438883cecb453d17c4665df112",
+  "prompts": {},
+  "sessions": {
+    "s_013a906a7bde60": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e9e2ee55-a959-41fa-b359-4324cbce6f53",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Djalma Araújo <djalma@nossomos.cc>"
+    }
+  }
+}
