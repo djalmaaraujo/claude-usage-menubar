@@ -14,6 +14,7 @@ cp menubar-mark-100.png "$APP/Contents/Resources/"
 
 swiftc -parse-as-library -o "$APP/Contents/MacOS/ClaudeUsage" \
     App.swift \
+    NotchAlert.swift \
     -framework SwiftUI -framework AppKit \
     -target arm64-apple-macos13.0
 
