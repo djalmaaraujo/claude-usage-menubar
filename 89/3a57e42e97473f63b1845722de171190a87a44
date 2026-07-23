@@ -1,0 +1,20 @@
+docs/superpowers/specs/2026-07-23-notch-alert-design.md
+  s_013a906a7bde60::t_269eea98cba73d 1-31,33-128
+  s_013a906a7bde60::t_b6599c36ace757 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "893a57e42e97473f63b1845722de171190a87a44",
+  "prompts": {},
+  "sessions": {
+    "s_013a906a7bde60": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e9e2ee55-a959-41fa-b359-4324cbce6f53",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Djalma Araújo <djalma@nossomos.cc>"
+    }
+  }
+}
