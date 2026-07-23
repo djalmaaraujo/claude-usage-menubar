@@ -81,9 +81,14 @@
   .links { margin-top: 24px; }
   .links a { color: var(--text-dim); text-decoration: none; margin: 0 12px; border-bottom: 1px solid transparent; }
   .links a:hover { color: var(--text); border-bottom-color: var(--accent-a); }
-  .screens { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
-  .screens img { width: 220px; max-width: 100%; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.2); }
-  .screens figcaption { color: var(--text-dim); font-size: 0.85rem; text-align: center; margin-top: 8px; }
+  .hero-shot {
+    display: block;
+    width: min(760px, 90vw);
+    margin: 40px auto 0;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  }
   .stats { color: var(--text-dim); font-size: 0.9rem; margin-top: 20px; }
   ul.features { color: var(--text-dim); padding-left: 20px; font-size: 1.05rem; }
   ul.features li { margin-bottom: 12px; }
@@ -107,6 +112,9 @@
   <section class="hero">
     <img class="logo" src="../assets/logo.svg" alt="Claude Usage logo">
     <h1>Your Claude Code quota,<br><span class="accent">live in the menu bar.</span></h1>
+
+    <img class="hero-shot" src="../assets/screenshot-hero.jpg" alt="Claude Usage popover open in the menu bar, with the settings menu showing">
+
     <p class="tagline" style="margin: 0 auto;">Reads straight from the <code>claude</code> CLI on your machine — no browser cookie, no login, no network calls beyond your own Anthropic account.</p>
 
     <div class="install-row">
@@ -123,23 +131,10 @@
   </section>
 
   <section>
-    <h2>See it in your menu bar</h2>
-    <div class="screens">
-      <figure>
-        <img src="../assets/screenshot-dark.png" alt="Claude Usage popover in dark mode">
-        <figcaption>Dark mode</figcaption>
-      </figure>
-      <figure>
-        <img src="../assets/screenshot-light.png" alt="Claude Usage popover in light mode">
-        <figcaption>Light mode</figcaption>
-      </figure>
-    </div>
-  </section>
-
-  <section>
     <h2>Features</h2>
     <ul class="features">
       <li>Three progress bars: session (5 hour), weekly (7 day), and weekly for the model you're actively using.</li>
+      <li>Adapts to your system's dark or light appearance automatically — no toggle to manage.</li>
       <li>Pick what shows next to the menu bar icon — session, weekly, or weekly-per-model.</li>
       <li>Threshold alerts — set a percentage and get a system sound once your selected figure crosses it.</li>
       <li>Notch alert panel — on notched MacBooks, a Dynamic-Island-style pill expands over the notch when your threshold is crossed.</li>
