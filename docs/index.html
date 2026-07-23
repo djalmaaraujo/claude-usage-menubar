@@ -84,22 +84,6 @@
   .screens { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
   .screens img { width: 220px; max-width: 100%; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.2); }
   .screens figcaption { color: var(--text-dim); font-size: 0.85rem; text-align: center; margin-top: 8px; }
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 48px;
-    align-items: start;
-    padding: 96px 0;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
-  }
-  .two-col > div { padding: 0; border: none; }
-  .two-col h2 { font-size: 1.35rem; margin-bottom: 20px; }
-  .two-col .screens { justify-content: flex-start; flex-wrap: wrap; gap: 16px; margin-top: 16px; }
-  .two-col .screens img { width: 220px; }
-  @media (max-width: 760px) {
-    .two-col { grid-template-columns: 1fr; gap: 64px; padding: 64px 0; }
-    .two-col .screens { justify-content: center; }
-  }
   .stats { color: var(--text-dim); font-size: 0.9rem; margin-top: 20px; }
   ul.features { color: var(--text-dim); padding-left: 20px; font-size: 1.05rem; }
   ul.features li { margin-bottom: 12px; }
@@ -138,25 +122,19 @@
     <p class="stats">Fully native — no Electron · &lt;3MB on disk · &lt;30MB memory</p>
   </section>
 
-  <div class="two-col">
-    <div>
-      <h2>Zero tokens to check your usage</h2>
-      <p><code>/usage</code> is a Claude Code CLI command answered entirely locally — it never reaches the model. The app just automates typing it every 60 seconds and turns the reply into progress bars. No hidden cost, no extra spend, ever.</p>
+  <section>
+    <h2>See it in your menu bar</h2>
+    <div class="screens">
+      <figure>
+        <img src="../assets/screenshot-dark.png" alt="Claude Usage popover in dark mode">
+        <figcaption>Dark mode</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/screenshot-light.png" alt="Claude Usage popover in light mode">
+        <figcaption>Light mode</figcaption>
+      </figure>
     </div>
-    <div>
-      <h2>See it in your menu bar</h2>
-      <div class="screens">
-        <figure>
-          <img src="../assets/screenshot-dark.png" alt="Claude Usage popover in dark mode">
-          <figcaption>Dark mode</figcaption>
-        </figure>
-        <figure>
-          <img src="../assets/screenshot-light.png" alt="Claude Usage popover in light mode">
-          <figcaption>Light mode</figcaption>
-        </figure>
-      </div>
-    </div>
-  </div>
+  </section>
 
   <section>
     <h2>Features</h2>
