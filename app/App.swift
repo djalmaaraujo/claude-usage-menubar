@@ -174,6 +174,7 @@ final class UsageStore: ObservableObject {
             guard lastAlertedPercent == nil else { return }
             lastAlertedPercent = block.percent
             NSSound(named: "Glass")?.play()
+            NotchAlertController.shared.show(percent: block.percent, label: block.label)
         } else {
             lastAlertedPercent = nil
         }
