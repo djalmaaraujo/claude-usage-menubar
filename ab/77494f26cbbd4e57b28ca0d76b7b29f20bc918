@@ -1,0 +1,20 @@
+docs/superpowers/plans/2026-07-24-usage-stats.md
+  s_003b76e264f5e3::t_9cdb5eb083d8c1 1-456,458-506
+  s_003b76e264f5e3::t_93593184191ed6 457
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "ab77494f26cbbd4e57b28ca0d76b7b29f20bc918",
+  "prompts": {},
+  "sessions": {
+    "s_003b76e264f5e3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4145531b-e235-400e-95cc-d094447402ef",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Djalma Araújo <djalma@nossomos.cc>"
+    }
+  }
+}
