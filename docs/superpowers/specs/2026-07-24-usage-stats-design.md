@@ -81,12 +81,14 @@ igual ao padrão já usado em `runUsageCommand`):
    dos últimos 7 dias — arquivo não tocado na janela não pode ter
    linha nova dentro dela, pula sem abrir (evita reler histórico de
    meses/GBs).
-3. Por arquivo que passa o filtro: lê linha a linha (`readLine`/split
-   por `\n`, não carrega o arquivo inteiro formatado em memória de
-   uma vez além do necessário), faz parse de cada linha como JSON solto
-   (linhas que não são `assistant` ou não têm `usage`/`timestamp`/`model`
-   são ignoradas silenciosamente — mesmo espírito tolerante do parser de
-   `/usage`).
+3. Por arquivo que passa o filtro: lê o conteúdo inteiro
+   (`String(contentsOf:)`) e faz `split("\n")` — não um leitor de linha
+   em chunks manual (risco de cortar UTF-8 no meio do buffer); o filtro
+   de `mtime` já limita isso a arquivos tocados nos últimos 7 dias, na
+   prática poucos MB no pior caso visto (~6MB), não justifica streaming
+   byte-a-byte. Cada linha vira JSON solto (linhas que não são
+   `assistant` ou não têm `usage`/`timestamp`/`model` são ignoradas
+   silenciosamente — mesmo espírito tolerante do parser de `/usage`).
 4. Descarta entradas com `timestamp` fora da janela de 7 dias (dia
    corrente + 6 anteriores, no fuso local).
 5. Acumula em dois dicionários: `[dia: Int]` e `[(dia, modelo): Int]`
@@ -157,8 +159,7 @@ gráfico, sem crashar em índice vazio.
   com o que o usuário vê no relógio do Mac.
 - **Arquivos grandes (vistos até ~6MB nesta máquina):** filtro de
   `mtime` antes de abrir evita a maioria; para os poucos que passam,
-  leitura é streaming linha a linha, não é um `Data(contentsOf:)`
-  de uma vez só.
+  ~6MB como string é aceitável (uma vez por arquivo, a cada 5 min).
 
 ## Fora de escopo (explícito)
 
