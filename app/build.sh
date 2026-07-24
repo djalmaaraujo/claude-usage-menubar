@@ -15,7 +15,8 @@ cp menubar-mark-100.png "$APP/Contents/Resources/"
 swiftc -parse-as-library -o "$APP/Contents/MacOS/ClaudeUsage" \
     App.swift \
     NotchAlert.swift \
-    -framework SwiftUI -framework AppKit -framework ServiceManagement \
+    Stats.swift \
+    -framework SwiftUI -framework AppKit -framework ServiceManagement -framework Charts \
     -target arm64-apple-macos13.0
 
 chmod 755 "$APP/Contents/MacOS/ClaudeUsage"
