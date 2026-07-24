@@ -1,4 +1,5 @@
 import SwiftUI
+import ServiceManagement
 
 // Plan tier (e.g. "Max 5x"), read once from ~/.claude.json - not part of
 // /usage's own output. Nil (shows nothing) if the file, field, or a
@@ -397,6 +398,26 @@ struct UsageBarView: View {
 
 let repoURL = URL(string: "https://github.com/djalmaaraujo/claude-usage-menubar")!
 
+// Login item state lives in macOS's own registration (SMAppService), not just
+// our stored bool - the user can disable it from System Settings > General >
+// Login Items without us knowing, so `register()`/`unregister()` are called
+// idempotently against the real .status rather than assumed from our default.
+enum LoginItemManager {
+    static func setEnabled(_ enabled: Bool) {
+        do {
+            if enabled {
+                if SMAppService.mainApp.status != .enabled {
+                    try SMAppService.mainApp.register()
+                }
+            } else if SMAppService.mainApp.status == .enabled {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            NSLog("ClaudeUsage: failed to %@ login item: %@", enabled ? "register" : "unregister", "\(error)")
+        }
+    }
+}
+
 struct ContentView: View {
     @ObservedObject var store: UsageStore
     @ObservedObject var updateChecker: UpdateChecker
@@ -405,6 +426,7 @@ struct ContentView: View {
     @AppStorage("alertsEnabled") private var alertsEnabled = false
     @AppStorage("alertThreshold") private var alertThreshold = 90
     @AppStorage("autoCheckUpdates") private var autoCheckUpdates = true
+    @AppStorage("launchAtLogin") private var launchAtLogin = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -518,6 +540,15 @@ struct ContentView: View {
                         Button("Check for Updates Now") { updateChecker.check() }
                             .disabled(updateChecker.isChecking)
                     }
+                    Section("Startup") {
+                        Toggle("Open at Login", isOn: Binding(
+                            get: { launchAtLogin },
+                            set: { newValue in
+                                launchAtLogin = newValue
+                                LoginItemManager.setEnabled(newValue)
+                            }
+                        ))
+                    }
                     Button("GitHub") { NSWorkspace.shared.open(repoURL) }
                     Divider()
                     Button("Quit Claude Usage v\(updateChecker.currentVersion)") { NSApplication.shared.terminate(nil) }
@@ -542,6 +573,11 @@ struct ClaudeUsageMenuApp: App {
     @AppStorage("menuBarSourceKind") private var menuBarSourceKind = BlockKind.session.rawValue
     @AppStorage("alertsEnabled") private var alertsEnabled = false
     @AppStorage("alertThreshold") private var alertThreshold = 90
+
+    init() {
+        let launchAtLogin = UserDefaults.standard.object(forKey: "launchAtLogin") as? Bool ?? true
+        LoginItemManager.setEnabled(launchAtLogin)
+    }
 
     var selectedBlock: UsageBlock? {
         guard store.errorText == nil, !store.blocks.isEmpty else { return nil }
