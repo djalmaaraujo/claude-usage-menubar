@@ -1,5 +1,6 @@
 import SwiftUI
 import ServiceManagement
+import Charts
 
 // Plan tier (e.g. "Max 5x"), read once from ~/.claude.json - not part of
 // /usage's own output. Nil (shows nothing) if the file, field, or a
@@ -421,6 +422,7 @@ enum LoginItemManager {
 struct ContentView: View {
     @ObservedObject var store: UsageStore
     @ObservedObject var updateChecker: UpdateChecker
+    @ObservedObject var statsStore: StatsStore
     @AppStorage("showProgressInMenuBar") private var showProgress = true
     @AppStorage("menuBarSourceKind") private var menuBarSourceKind = BlockKind.session.rawValue
     @AppStorage("alertsEnabled") private var alertsEnabled = false
@@ -491,6 +493,56 @@ struct ContentView: View {
                     Text("\(alertThreshold)%")
                         .font(.caption).foregroundColor(.secondary)
                         .frame(width: 32, alignment: .trailing)
+                }
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Today: \(statsStore.stats.todayTokens.formatted()) tokens")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                if statsStore.stats.dailyTotals.allSatisfy({ $0.tokens == 0 }) {
+                    Text("No local usage data in the last 7 days")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else {
+                    Chart(statsStore.stats.dailyTotals) { day in
+                        BarMark(
+                            x: .value("Day", day.day),
+                            y: .value("Tokens", day.tokens)
+                        )
+                        .foregroundStyle(.green)
+                    }
+                    .frame(height: 80)
+                }
+
+                // computeUsageStats doesn't filter zero-token entries (some
+                // internal/synthetic model identifiers can show up with all-
+                // zero usage) - skip those here so the list doesn't show a
+                // visibly empty "0 tokens (0%)" row.
+                let visibleModelTotals = statsStore.stats.modelTotals.filter { $0.tokens > 0 }
+                if !visibleModelTotals.isEmpty {
+                    let totalModelTokens = visibleModelTotals.reduce(0) { $0 + $1.tokens }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Usage by model (7 days)").font(.caption).bold()
+                        ForEach(visibleModelTotals) { model in
+                            HStack {
+                                Text(model.model).font(.caption)
+                                Spacer()
+                                Text("\(model.tokens.formatted()) (\(totalModelTokens > 0 ? Int(Double(model.tokens) / Double(totalModelTokens) * 100) : 0)%)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
+                    if let topModel = statsStore.stats.mostUsedModel {
+                        Text("Most used model: \(topModel)")
+                            .font(.caption)
+                            .bold()
+                    }
                 }
             }
 
@@ -569,6 +621,7 @@ struct ContentView: View {
 struct ClaudeUsageMenuApp: App {
     @StateObject private var store = UsageStore()
     @StateObject private var updateChecker = UpdateChecker()
+    @StateObject private var statsStore = StatsStore()
     @AppStorage("showProgressInMenuBar") private var showProgress = true
     @AppStorage("menuBarSourceKind") private var menuBarSourceKind = BlockKind.session.rawValue
     @AppStorage("alertsEnabled") private var alertsEnabled = false
@@ -599,7 +652,7 @@ struct ClaudeUsageMenuApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            ContentView(store: store, updateChecker: updateChecker)
+            ContentView(store: store, updateChecker: updateChecker, statsStore: statsStore)
         } label: {
             HStack(spacing: 0) {
                 if store.errorText != nil {
