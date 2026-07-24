@@ -109,3 +109,28 @@ func computeUsageStats(logsRoot: URL, now: Date = Date()) -> UsageStats {
         mostUsedModel: modelTotals.first?.model
     )
 }
+
+@MainActor
+final class StatsStore: ObservableObject {
+    @Published var stats = UsageStats(dailyTotals: [], modelTotals: [], todayTokens: 0, mostUsedModel: nil)
+
+    private var timer: Timer?
+    private let logsRoot = URL(fileURLWithPath: "\(NSHomeDirectory())/.claude/projects")
+
+    init() {
+        refresh()
+        timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.refresh() }
+        }
+    }
+
+    func refresh() {
+        let root = logsRoot
+        Task {
+            let result = await Task.detached(priority: .utility) {
+                computeUsageStats(logsRoot: root)
+            }.value
+            self.stats = result
+        }
+    }
+}
