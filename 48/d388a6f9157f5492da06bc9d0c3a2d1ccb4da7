@@ -1,0 +1,20 @@
+docs/superpowers/specs/2026-07-24-usage-stats-design.md
+  s_003b76e264f5e3::t_bdd88b268838c5 1-127,133-186
+  s_003b76e264f5e3::t_15749551aa1c4c 128-132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "48d388a6f9157f5492da06bc9d0c3a2d1ccb4da7",
+  "prompts": {},
+  "sessions": {
+    "s_003b76e264f5e3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4145531b-e235-400e-95cc-d094447402ef",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Djalma Araújo <djalma@nossomos.cc>"
+    }
+  }
+}
