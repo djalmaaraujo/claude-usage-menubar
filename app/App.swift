@@ -499,6 +499,9 @@ struct ContentView: View {
             Divider()
 
             VStack(alignment: .leading, spacing: 10) {
+                Text("Stats")
+                    .font(.headline)
+
                 Text("Today: \(statsStore.stats.todayTokens.formatted()) tokens")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -510,12 +513,18 @@ struct ContentView: View {
                 } else {
                     Chart(statsStore.stats.dailyTotals) { day in
                         BarMark(
-                            x: .value("Day", day.day),
+                            x: .value("Day", day.date, unit: .day),
                             y: .value("Tokens", day.tokens)
                         )
                         .foregroundStyle(.green)
                     }
                     .frame(height: 80)
+                    .chartXAxis {
+                        AxisMarks(values: statsStore.stats.dailyTotals.map(\.date)) { _ in
+                            AxisValueLabel(format: .dateTime.weekday(.abbreviated))
+                            AxisGridLine()
+                        }
+                    }
                 }
 
                 // computeUsageStats doesn't filter zero-token entries (some
