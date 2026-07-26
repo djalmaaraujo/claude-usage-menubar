@@ -527,10 +527,9 @@ struct ContentView: View {
                     }
                 }
 
-                // computeUsageStats doesn't filter zero-token entries (some
-                // internal/synthetic model identifiers can show up with all-
-                // zero usage) - skip those here so the list doesn't show a
-                // visibly empty "0 tokens (0%)" row.
+                // Defensive: computeUsageStats already excludes <synthetic>,
+                // but any other model that nets to exactly 0 tokens would
+                // still show a visibly empty "0 tokens (0%)" row without this.
                 let visibleModelTotals = statsStore.stats.modelTotals.filter { $0.tokens > 0 }
                 if !visibleModelTotals.isEmpty {
                     let totalModelTokens = visibleModelTotals.reduce(0) { $0 + $1.tokens }
