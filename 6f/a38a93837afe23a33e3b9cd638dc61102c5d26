@@ -1,0 +1,24 @@
+app/Stats.swift
+  s_003b76e264f5e3::t_2f415168634875 98
+  s_003b76e264f5e3::t_abf748d9431615 87-89
+  s_003b76e264f5e3::t_3cebbb6b2d73e9 6
+app/App.swift
+  s_003b76e264f5e3::t_e0b5b9d331d2ba 502-504
+  s_003b76e264f5e3::t_5647b51c613670 516,522-527
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "6fa38a93837afe23a33e3b9cd638dc61102c5d26",
+  "prompts": {},
+  "sessions": {
+    "s_003b76e264f5e3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4145531b-e235-400e-95cc-d094447402ef",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Djalma Araújo <djalma@nossomos.cc>"
+    }
+  }
+}
