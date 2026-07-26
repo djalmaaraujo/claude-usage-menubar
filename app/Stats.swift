@@ -2,7 +2,6 @@ import Foundation
 
 struct DayTokens: Identifiable {
     let id: String
-    let day: String
     let date: Date
     let tokens: Int
 }
@@ -95,7 +94,7 @@ func computeUsageStats(logsRoot: URL, now: Date = Date()) -> UsageStats {
     for offset in stride(from: 6, through: 0, by: -1) {
         guard let date = calendar.date(byAdding: .day, value: -offset, to: todayStart) else { continue }
         let key = statsDayFormatter.string(from: date)
-        dailyTotals.append(DayTokens(id: key, day: key, date: date, tokens: perDay[key] ?? 0))
+        dailyTotals.append(DayTokens(id: key, date: date, tokens: perDay[key] ?? 0))
     }
 
     let modelTotals = perModel
