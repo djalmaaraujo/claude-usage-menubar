@@ -424,7 +424,7 @@ enum LoginItemManager {
 // Abbreviates to K/M/B, keeping the fractional part locale-aware via
 // .formatted() (matches the rest of the app's locale-aware number display)
 // while the K/M/B suffix itself stays fixed regardless of locale.
-func abbreviatedTokenCount(_ value: Int) -> String {
+func abbreviatedTokenCount(_ value: Int, maxFractionDigits: Int = 1) -> String {
     let magnitude = abs(Double(value))
     let (divisor, suffix): (Double, String) = {
         switch magnitude {
@@ -435,7 +435,7 @@ func abbreviatedTokenCount(_ value: Int) -> String {
         }
     }()
     guard divisor > 1 else { return value.formatted() }
-    return (Double(value) / divisor).formatted(.number.precision(.fractionLength(0...1))) + suffix
+    return (Double(value) / divisor).formatted(.number.precision(.fractionLength(0...maxFractionDigits))) + suffix
 }
 
 struct ContentView: View {
@@ -522,7 +522,7 @@ struct ContentView: View {
                 Text("Stats")
                     .font(.headline)
 
-                Text("Today: \(statsStore.stats.todayTokens.formatted()) tokens")
+                Text("Today: \(abbreviatedTokenCount(statsStore.stats.todayTokens, maxFractionDigits: 2)) tokens")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
@@ -603,7 +603,8 @@ struct ContentView: View {
                             HStack {
                                 Text(model.model).font(.caption)
                                 Spacer()
-                                Text("\(model.tokens.formatted()) (\(totalModelTokens > 0 ? Int(Double(model.tokens) / Double(totalModelTokens) * 100) : 0)%)")
+                                let percent = totalModelTokens > 0 ? Double(model.tokens) / Double(totalModelTokens) * 100 : 0
+                                Text("\(abbreviatedTokenCount(model.tokens, maxFractionDigits: 2)) (\(percent.formatted(.number.precision(.fractionLength(1))))%)")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
