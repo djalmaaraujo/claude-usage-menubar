@@ -419,6 +419,25 @@ enum LoginItemManager {
     }
 }
 
+// Swift Charts' default axis formatting falls back to scientific notation
+// (e.g. "4,0E8") once values cross ~1e6 - not readable for a token count.
+// Abbreviates to K/M/B, keeping the fractional part locale-aware via
+// .formatted() (matches the rest of the app's locale-aware number display)
+// while the K/M/B suffix itself stays fixed regardless of locale.
+func abbreviatedTokenCount(_ value: Int) -> String {
+    let magnitude = abs(Double(value))
+    let (divisor, suffix): (Double, String) = {
+        switch magnitude {
+        case 1_000_000_000...: return (1_000_000_000, "B")
+        case 1_000_000...: return (1_000_000, "M")
+        case 1_000...: return (1_000, "K")
+        default: return (1, "")
+        }
+    }()
+    guard divisor > 1 else { return value.formatted() }
+    return (Double(value) / divisor).formatted(.number.precision(.fractionLength(0...1))) + suffix
+}
+
 struct ContentView: View {
     @ObservedObject var store: UsageStore
     @ObservedObject var updateChecker: UpdateChecker
@@ -429,6 +448,7 @@ struct ContentView: View {
     @AppStorage("alertThreshold") private var alertThreshold = 90
     @AppStorage("autoCheckUpdates") private var autoCheckUpdates = true
     @AppStorage("launchAtLogin") private var launchAtLogin = true
+    @State private var hoveredDay: DayTokens?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -523,6 +543,50 @@ struct ContentView: View {
                         AxisMarks(values: statsStore.stats.dailyTotals.map(\.date)) { _ in
                             AxisValueLabel(format: .dateTime.weekday(.abbreviated))
                             AxisGridLine()
+                        }
+                    }
+                    .chartYAxis {
+                        AxisMarks { value in
+                            AxisGridLine()
+                            AxisValueLabel {
+                                if let tokens = value.as(Int.self) {
+                                    Text(abbreviatedTokenCount(tokens))
+                                }
+                            }
+                        }
+                    }
+                    .chartOverlay { proxy in
+                        GeometryReader { geo in
+                            Rectangle()
+                                .fill(.clear)
+                                .contentShape(Rectangle())
+                                .onContinuousHover { phase in
+                                    let plotFrame = proxy.plotAreaFrame
+                                    switch phase {
+                                    case .active(let location):
+                                        let origin = geo[plotFrame].origin
+                                        let xInPlot = location.x - origin.x
+                                        guard let date: Date = proxy.value(atX: xInPlot) else { hoveredDay = nil; return }
+                                        hoveredDay = statsStore.stats.dailyTotals.min { a, b in
+                                            abs(a.date.timeIntervalSince(date)) < abs(b.date.timeIntervalSince(date))
+                                        }
+                                    case .ended:
+                                        hoveredDay = nil
+                                    }
+                                }
+                        }
+                    }
+                    .overlay(alignment: .top) {
+                        if let hoveredDay {
+                            Text("\(hoveredDay.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())): \(hoveredDay.tokens.formatted()) tokens")
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.black.opacity(0.85))
+                                .foregroundColor(.white)
+                                .cornerRadius(4)
+                                .offset(y: -18)
+                                .allowsHitTesting(false)
                         }
                     }
                 }
