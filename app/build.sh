@@ -16,7 +16,7 @@ swiftc -parse-as-library -o "$APP/Contents/MacOS/ClaudeUsage" \
     App.swift \
     NotchAlert.swift \
     Stats.swift \
-    -framework SwiftUI -framework AppKit -framework ServiceManagement -framework Charts \
+    -framework SwiftUI -framework AppKit -framework ServiceManagement -framework Charts -framework UserNotifications \
     -target arm64-apple-macos13.0
 
 chmod 755 "$APP/Contents/MacOS/ClaudeUsage"

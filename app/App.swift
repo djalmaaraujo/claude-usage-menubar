@@ -1,6 +1,7 @@
 import SwiftUI
 import ServiceManagement
 import Charts
+import UserNotifications
 
 // Plan tier (e.g. "Max 5x"), read once from ~/.claude.json - not part of
 // /usage's own output. Nil (shows nothing) if the file, field, or a
@@ -299,6 +300,7 @@ final class UpdateChecker: ObservableObject {
     }
 
     init() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
         if UserDefaults.standard.object(forKey: "autoCheckUpdates") as? Bool ?? true {
             check()
         }
@@ -320,12 +322,31 @@ final class UpdateChecker: ObservableObject {
                 request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
                 let (data, _) = try await URLSession.shared.data(for: request)
                 let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
-                latestVersion = release.tag_name.hasPrefix("v") ? String(release.tag_name.dropFirst()) : release.tag_name
+                let version = release.tag_name.hasPrefix("v") ? String(release.tag_name.dropFirst()) : release.tag_name
+                latestVersion = version
                 checkError = nil
+                if Self.isNewer(version, than: currentVersion) {
+                    notifyIfNewUpdate(version)
+                }
             } catch {
                 checkError = "Couldn't check for updates"
             }
         }
+    }
+
+    // Only fires once per version - re-checking hourly would otherwise
+    // re-notify for the same already-known update every single time.
+    private func notifyIfNewUpdate(_ version: String) {
+        let d = UserDefaults.standard
+        guard d.string(forKey: "lastNotifiedUpdateVersion") != version else { return }
+        d.set(version, forKey: "lastNotifiedUpdateVersion")
+
+        let content = UNMutableNotificationContent()
+        content.title = "Claude Usage update available"
+        content.body = "Version \(version) is ready. Click the menu bar icon to update."
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: "claude-usage-update-\(version)", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
     }
 
     func updateAndRestart() {
