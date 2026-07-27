@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/screenshot-main.png" alt="Claude Usage popover and settings menu" width="480">
+  <img src="assets/screenshot-main.png" alt="Claude Usage popover showing usage bars and the 7-day Stats section" width="480">
 </p>
 
 ---
@@ -39,8 +39,11 @@ No cookies, no OAuth flow of its own, no server. It shells out to the `claude` b
 
 - **Pick what shows next to the icon** — session, weekly, or weekly-per-model, from the gear menu. Only options `/usage` actually returned show up.
 - **Threshold alerts** — set a percentage in the gear menu and get a system sound once your selected figure crosses it.
+- **Notch alert panel** — on notched MacBooks, a Dynamic-Island-style pill expands over the notch when your threshold is crossed.
 - **Clear failure state** — if `claude` isn't installed, isn't logged in, or there's no connection, the popover shows a retry screen instead of spinning forever, and the menu bar icon swaps to a warning triangle.
 - **Checks for updates on its own** — polls this repo's GitHub releases on launch and hourly (toggle in the gear menu), and offers a one-click "Update & Restart" that runs `brew upgrade` and reopens the app for you.
+- **Open at Login** — on by default, one toggle in the gear menu to turn it off.
+- **Stats** — a 7-day token usage chart plus a per-model breakdown, computed locally from your own Claude Code session logs (nothing sent anywhere). Hover a bar for the exact token count.
 
 <p align="center">
   <img src="assets/menubar-icon.png" alt="Claude Usage menu bar icon" height="24">
@@ -93,11 +96,15 @@ No other dependencies — one Swift file, SwiftUI + AppKit only.
 
 `/usage` is a built-in Claude Code command answered locally by the CLI (no model call, no token cost — `total_cost_usd` and `duration_api_ms` come back `0`). The app just automates typing it every minute and turns the text reply into bars.
 
+The Stats section doesn't go through `/usage` at all — there's no CLI command for a 7-day history, so the app reads your local session transcripts directly (`~/.claude/projects/**/*.jsonl`, the same files Claude Code itself already writes) and sums token usage per day/model on a 5-minute timer. Nothing leaves your machine.
+
 ## Project layout
 
 | File | Purpose |
 |------|---------|
-| `app/App.swift` | the entire app — menu bar scene, usage polling, parsing, UI |
+| `app/App.swift` | menu bar scene, usage polling, parsing, UI |
+| `app/Stats.swift` | scans local `~/.claude/projects/**/*.jsonl` session logs to build the 7-day token/model stats |
+| `app/NotchAlert.swift` | the Dynamic-Island-style notch alert panel |
 | `app/make_icon.swift` | generates `AppIcon.icns` + `menubar-mark.png` from the Claude Code mark |
 | `app/Info.plist` | bundle metadata, `LSUIElement` to hide the Dock icon |
 | `app/build.sh` | compiles and packages `ClaudeUsage.app` |
