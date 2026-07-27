@@ -1,0 +1,25 @@
+README.md
+  s_003b76e264f5e3::t_ce9793d353b6cf 23
+  s_003b76e264f5e3::t_9482d724bfb38d 105-107
+  s_003b76e264f5e3::t_a7e02d0f08eab2 42,45-46
+  s_003b76e264f5e3::t_243232f06d6919 99-100
+docs/index.html
+  s_003b76e264f5e3::t_a8ff19d9dc3172 116
+  s_003b76e264f5e3::t_60ffe59dbe80d8 143-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "6b4e62c6b646fc0375aa69d9bfc767e0d67eb6f6",
+  "prompts": {},
+  "sessions": {
+    "s_003b76e264f5e3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4145531b-e235-400e-95cc-d094447402ef",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Djalma Araújo <djalma@nossomos.cc>"
+    }
+  }
+}
